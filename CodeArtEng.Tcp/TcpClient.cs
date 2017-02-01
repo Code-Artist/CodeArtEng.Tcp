@@ -67,6 +67,7 @@ namespace CodeArtEng.Tcp
         /// Write string to server.
         /// </summary>
         /// <param name="message"></param>
+        /// <remarks>Automatic check and establish connection with server.</remarks>
         public void Write(string message)
         {
             byte[] outputBuffer = Encoding.ASCII.GetBytes(message);
@@ -77,8 +78,11 @@ namespace CodeArtEng.Tcp
         /// Write byte array to server.
         /// </summary>
         /// <param name="dataBytes"></param>
+        /// <remarks>Automatic check and establish connection with server.</remarks>
         public void Write(byte [] dataBytes)
         {
+            if (!Connected) Connect();
+
             NetworkStream tcpStream = Client.GetStream();
             Debug.WriteLine("Output Length = " + dataBytes.Length);
             tcpStream.Write(dataBytes, 0, dataBytes.Length);
@@ -89,8 +93,11 @@ namespace CodeArtEng.Tcp
         /// Read byte array from server.
         /// </summary>
         /// <returns></returns>
+        /// <remarks>Automatic check and establish connection with server.</remarks>
         public byte [] ReadBytes()
         {
+            if (!Connected) Connect();
+
             NetworkStream tcpStream =  Client.GetStream();
             while(tcpStream.DataAvailable)
             {
@@ -113,10 +120,10 @@ namespace CodeArtEng.Tcp
         /// Read string from server.
         /// </summary>
         /// <returns></returns>
+        /// <remarks>Automatic check and establish connection with server.</remarks>
         public string ReadString()
         {
             return ASCIIEncoding.ASCII.GetString(ReadBytes());
         }
-
     }
 }
