@@ -28,13 +28,21 @@ namespace CodeArtEng.Tcp.Tests
                 server.Start(12000);
 
                 TcpClient client = new TcpClient("localhost", 12000);
+                Trace.WriteLine("Client Conneect...");
                 client.Connect();
                 Thread.Sleep(200);
                 Assert.AreEqual(true, client.Connected);
                 Assert.AreEqual(1, server.Clients.Count);
+                Trace.WriteLine("Client Disconnect...");
                 client.Disconnect();
                 Thread.Sleep(200);
                 Assert.AreEqual(0, server.Clients.Count);
+                client.Disconnect();
+                Thread.Sleep(200);
+                Trace.WriteLine("Client Reconnect...");
+                client.Connect();
+                Thread.Sleep(200);
+                Assert.AreEqual(1, server.Clients.Count);
 
             }
         }
@@ -132,8 +140,18 @@ namespace CodeArtEng.Tcp.Tests
             TcpDelay();
             string returnString = Client.ReadString();
             Assert.AreEqual("Server [Message from Client] ACK.", returnString);
+            Assert.AreEqual(string.Empty, Client.ReadString());
             
         }
 
+        [Test]
+        public void CommunicateWithServerBytes()
+        {
+            Client.Write("Message from Client\t");
+            TcpDelay();
+            Assert.IsTrue(Client.ReadBytes().Count() != 0);
+            Assert.AreEqual(0, Client.ReadBytes().Count());
+
+        }
     }
 }

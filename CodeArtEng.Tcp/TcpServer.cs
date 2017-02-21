@@ -183,9 +183,9 @@ namespace CodeArtEng.Tcp
             {
                 Thread.Sleep(10);
             }
-            ServerStopped?.Invoke(this, null);
             DisconnectAllClients();
             ConnectionMonitoring = null;
+            ServerStopped?.Invoke(this, null);
         }
 
         private void DisconnectAllClients()

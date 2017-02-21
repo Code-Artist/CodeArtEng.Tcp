@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TcpServerTests.Properties
+namespace TcpClientExample.Properties
 {
 
 

@@ -50,6 +50,7 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public void Connect()
         {
+            if (Connected) Disconnect();
             Client.Connect(HostName, Port);
             BufferSize = Client.ReceiveBufferSize;
             FixedBuffer = new byte[BufferSize];
@@ -60,7 +61,9 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public void Disconnect()
         {
+            if (Connected) Client.GetStream().Close();
             Client.Close();
+            Client = new System.Net.Sockets.TcpClient();
         }
 
         /// <summary>
@@ -79,7 +82,7 @@ namespace CodeArtEng.Tcp
         /// </summary>
         /// <param name="dataBytes"></param>
         /// <remarks>Automatic check and establish connection with server.</remarks>
-        public void Write(byte [] dataBytes)
+        public void Write(byte[] dataBytes)
         {
             if (!Connected) Connect();
 
@@ -94,12 +97,13 @@ namespace CodeArtEng.Tcp
         /// </summary>
         /// <returns></returns>
         /// <remarks>Automatic check and establish connection with server.</remarks>
-        public byte [] ReadBytes()
+        public byte[] ReadBytes()
         {
             if (!Connected) Connect();
+            ByteBuffer.Clear();
 
-            NetworkStream tcpStream =  Client.GetStream();
-            while(tcpStream.DataAvailable)
+            NetworkStream tcpStream = Client.GetStream();
+            while (tcpStream.DataAvailable)
             {
                 int readByte = tcpStream.Read(FixedBuffer, 0, BufferSize);
                 if (readByte == 0) break;
@@ -108,11 +112,13 @@ namespace CodeArtEng.Tcp
 
                 else
                 {
-                    for (int x = 0; x < readByte; x++)
-                        ByteBuffer.Add(FixedBuffer[x]);
+                    //for (int x = 0; x < readByte; x++)
+                    //    ByteBuffer.Add(FixedBuffer[x]);
+                    byte[] data = new byte[readByte];
+                    System.Array.Copy(FixedBuffer, data, readByte);
+                    ByteBuffer.AddRange(data);
                 }
             }
-
             return ByteBuffer.ToArray();
         }
 
