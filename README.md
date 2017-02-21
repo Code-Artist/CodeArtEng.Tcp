@@ -10,6 +10,6 @@ TCP Client:
 - Read / Write bytes array / string to Server.
 - Check connection status with Server.
 
-Code Artist 2017
-(www.codearteng.com)
+Code Artist 2017  
+www.codearteng.com
 
