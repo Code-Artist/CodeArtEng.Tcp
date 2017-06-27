@@ -308,6 +308,10 @@ namespace CodeArtEng.Tcp
         /// Incoming message.
         /// </summary>
         public string ReceivedMessage { get; set; }
+        /// <summary>
+        /// Incoming message in byte array.
+        /// </summary>
+        public byte [] ReceivedBytes { get; set; }
     }
 
     /// <summary>
@@ -321,7 +325,7 @@ namespace CodeArtEng.Tcp
         private int BufferSize;
         private byte[] buffer;
         private string Message;
-        private StringBuilder MessageBuffer;
+        private List<byte> MessageBuffer;
 
         /// <summary>
         /// IP address for connected client.
@@ -348,6 +352,11 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public event EventHandler<MessageReceivedEventArgs> MessageReceived;
 
+        /// <summary>
+        /// Get client connection status.
+        /// </summary>
+        public bool Connected { get; private set; }
+
         internal TcpServerConnection(TcpServer parent, System.Net.Sockets.TcpClient client)
         {
             Server = parent;
@@ -359,7 +368,7 @@ namespace CodeArtEng.Tcp
             buffer = new byte[BufferSize];
             TcpStream.Flush();
             Message = string.Empty;
-            MessageBuffer = new StringBuilder();
+            MessageBuffer = new List<byte>();
             BeginRead();
         }
 
@@ -401,6 +410,7 @@ namespace CodeArtEng.Tcp
         public void Close()
         {
             TcpStream.Close();
+            Connected = false;
         }
 
         private void BeginRead()
@@ -418,6 +428,7 @@ namespace CodeArtEng.Tcp
 
                 if (byteRead == 0)
                 {
+                    Close();
                     ClientDisconnected?.Invoke(this, null);
                     return;
                 }
@@ -433,13 +444,14 @@ namespace CodeArtEng.Tcp
                             byte b = buffer[x];
                             if (b != MessageDelimiter)
                             {
-                                MessageBuffer.Append(Convert.ToChar(b).ToString());
+                                MessageBuffer.Add(b);
                             }
                             else
                             {
-                                Message = MessageBuffer.ToString();
+                                byte[] messageBytes = MessageBuffer.ToArray();
+                                Message = Encoding.ASCII.GetString(messageBytes);
                                 MessageBuffer.Clear();
-                                OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message });
+                                OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message , ReceivedBytes = messageBytes});
                             }
                         }
                     }
@@ -451,7 +463,7 @@ namespace CodeArtEng.Tcp
                 ClientDisconnected?.Invoke(this, null);
                 return;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Trace.WriteLine("Exception raised from TcpServerConnection: " + ex.Message);
                 Trace.WriteLine("Client disconnected from server.");

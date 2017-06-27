@@ -33,13 +33,16 @@ namespace TcpServerExample
         private delegate void DelMethod(object sender, BytesReceivedEventArgs e);
         private void Client_BytesReceived(object sender, BytesReceivedEventArgs e)
         {
-            if(InvokeRequired)
+            if (InvokeRequired)
             {
-                BeginInvoke(new DelMethod(Client_BytesReceived) , new object[] { sender, e });
+                BeginInvoke(new DelMethod(Client_BytesReceived), new object[] { sender, e });
                 return;
             }
             txtInput.Text = System.Text.ASCIIEncoding.ASCII.GetString(e.ReceivedBytes);
-            e.Client.WriteToClient(txtReply.Text);
+            if (txtInput.Text.Length > 0)
+            {
+                if (e.Client.Connected) e.Client.WriteToClient(txtReply.Text);
+            }
         }
 
         private void Server_StateChanged(object sender, EventArgs e)

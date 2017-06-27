@@ -90,6 +90,7 @@ namespace CodeArtEng.Tcp.Tests
             Thread.Sleep(500);
             Client = new TcpClient("127.0.0.1", port);
             Client.Connect();
+            Client.ReadTimeout = 500;
             for (int x = 0; x < 10; x++)
             {
                 Thread.Sleep(500);
@@ -140,7 +141,6 @@ namespace CodeArtEng.Tcp.Tests
             TcpDelay();
             string returnString = Client.ReadString();
             Assert.AreEqual("Server [Message from Client] ACK.", returnString);
-            Assert.AreEqual(string.Empty, Client.ReadString());
             
         }
 
@@ -150,8 +150,12 @@ namespace CodeArtEng.Tcp.Tests
             Client.Write("Message from Client\t");
             TcpDelay();
             Assert.IsTrue(Client.ReadBytes().Count() != 0);
-            Assert.AreEqual(0, Client.ReadBytes().Count());
+        }
 
+        [Test, ExpectedException(typeof(TimeoutException))]
+        public void ReadUntilTimeout()
+        {
+            Client.ReadBytes();
         }
     }
 }

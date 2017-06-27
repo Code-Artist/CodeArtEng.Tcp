@@ -1,19 +1,30 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 
 namespace CodeArtEng.Tcp
 {
+    //ToDo: Handle Write Timeout
+
     /// <summary>
     /// TCP Client Implementation
     /// </summary>
     public class TcpClient
     {
         private System.Net.Sockets.TcpClient Client = new System.Net.Sockets.TcpClient();
+        private NetworkStream TcpStream;
         private List<byte> ByteBuffer = new List<byte>();
         private byte[] FixedBuffer;
         private int BufferSize;
+        private bool ConnectState = false;
+
+        /// <summary>
+        /// Occurs when connection is established / disconnected.
+        /// </summary>
+        /// <remarks>Handled by <see cref="Connected"/> property.</remarks>
+        public event EventHandler ConnectionStatusChanged;
 
         /// <summary>
         /// Server's IP Address / Host Name.
@@ -24,6 +35,13 @@ namespace CodeArtEng.Tcp
         /// TCP Server connection port.
         /// </summary>
         public int Port { get; set; }
+
+        /// <summary>
+        /// Gets or sets the amount of time in miliseconds to wait for a valid response from server.
+        /// <see cref="TimeoutException"/> raised if for read operation if no response received.
+        /// </summary>
+        /// <value>Default value = -1 (Wait Forever) </value>
+        public int ReadTimeout { get; set; } = -1;
 
         /// <summary>
         /// Constructor
@@ -43,15 +61,32 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Check if connection with Server stil active.
         /// </summary>
-        public bool Connected { get { return Client.IsConnected(); } }
+        public bool Connected
+        {
+            get
+            {
+                bool state = Client.IsConnected();
+                ConnectState = state;
+                return state;
+            }
+
+            private set
+            {
+                if (value == ConnectState) return;
+                ConnectState = value;
+                ConnectionStatusChanged?.Invoke(this, null);
+            }
+        }
 
         /// <summary>
         /// Attempt to establish connection with server.
         /// </summary>
         public void Connect()
         {
-            if (Connected) Disconnect();
+            Disconnect();
             Client.Connect(HostName, Port);
+            TcpStream = Client.GetStream();
+            Connected = true;
             BufferSize = Client.ReceiveBufferSize;
             FixedBuffer = new byte[BufferSize];
         }
@@ -64,6 +99,7 @@ namespace CodeArtEng.Tcp
             if (Connected) Client.GetStream().Close();
             Client.Close();
             Client = new System.Net.Sockets.TcpClient();
+            Connected = false;
         }
 
         /// <summary>
@@ -73,6 +109,7 @@ namespace CodeArtEng.Tcp
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public void Write(string message)
         {
+            if (!Connected) Connect();
             byte[] outputBuffer = Encoding.ASCII.GetBytes(message);
             Write(outputBuffer);
         }
@@ -86,38 +123,56 @@ namespace CodeArtEng.Tcp
         {
             if (!Connected) Connect();
 
-            NetworkStream tcpStream = Client.GetStream();
-            Debug.WriteLine("Output Length = " + dataBytes.Length);
-            tcpStream.Write(dataBytes, 0, dataBytes.Length);
-            tcpStream.Flush();
+            TcpStream.Write(dataBytes, 0, dataBytes.Length);
+            TcpStream.Flush();
+        }
+
+        /// <summary>
+        /// Discard input buffer in TCP Stream.
+        /// </summary>
+        public void FlushInputBuffer()
+        {
+            while (TcpStream.DataAvailable) { TcpStream.Read(FixedBuffer, 0, BufferSize); }
         }
 
         /// <summary>
         /// Read byte array from server.
         /// </summary>
         /// <returns></returns>
+        /// <exception cref="TimeoutException">No response recevied from server after defined <see cref="ReadTimeout"/> period.</exception>
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public byte[] ReadBytes()
         {
             if (!Connected) Connect();
             ByteBuffer.Clear();
 
-            NetworkStream tcpStream = Client.GetStream();
-            while (tcpStream.DataAvailable)
+            DateTime tStart = DateTime.Now;
+            if (ReadTimeout != -1)
             {
-                int readByte = tcpStream.Read(FixedBuffer, 0, BufferSize);
+                while (!TcpStream.DataAvailable)
+                {
+                    if ((DateTime.Now - tStart).TotalMilliseconds > ReadTimeout)
+                        throw new TimeoutException("Read timeout, no response from server!");
+                    System.Threading.Thread.Sleep(10);
+                }
+            }
+
+            while (true)
+            {
+                int readByte = TcpStream.Read(FixedBuffer, 0, BufferSize);
                 if (readByte == 0) break;
                 else if (readByte == BufferSize)
+                {
                     ByteBuffer.AddRange(FixedBuffer);
-
+                }
                 else
                 {
-                    //for (int x = 0; x < readByte; x++)
-                    //    ByteBuffer.Add(FixedBuffer[x]);
                     byte[] data = new byte[readByte];
                     System.Array.Copy(FixedBuffer, data, readByte);
                     ByteBuffer.AddRange(data);
                 }
+
+                if (!TcpStream.DataAvailable) break;
             }
             return ByteBuffer.ToArray();
         }
@@ -129,6 +184,7 @@ namespace CodeArtEng.Tcp
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public string ReadString()
         {
+            if (!Connected) Connect();
             return ASCIIEncoding.ASCII.GetString(ReadBytes());
         }
     }

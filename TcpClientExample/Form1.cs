@@ -22,6 +22,8 @@ namespace TcpClientExample
             Client.HostName = "127.0.0.1";
             Client.Port = 10000;
             propertyGrid1.SelectedObject = Client;
+            btWrite.Enabled = false;
+            btRead.Enabled = false;
         }
 
         private void btConnect_Click(object sender, EventArgs e)
@@ -30,6 +32,7 @@ namespace TcpClientExample
             txtInput.Enabled = Client.Connected;
             btWrite.Enabled = txtInput.Enabled;
             btRead.Enabled = txtInput.Enabled;
+            propertyGrid1.Refresh();
         }
 
         private void btWrite_Click(object sender, EventArgs e)
