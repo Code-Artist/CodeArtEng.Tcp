@@ -21,9 +21,21 @@ namespace TcpClientExample
 
             Client.HostName = "127.0.0.1";
             Client.Port = 10000;
+            Client.DataReceived += Client_DataReceived;
             propertyGrid1.SelectedObject = Client;
             btWrite.Enabled = false;
             btRead.Enabled = false;
+        }
+
+        private delegate void DelMethod(object sender, BytesReceivedEventArgs e);
+        private void Client_DataReceived(object sender, EventArgs e)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new DelMethod(Client_DataReceived), new object[] { sender, e });
+                return;
+            }
+            txtInput.Text = Client.ReadString();
         }
 
         private void btConnect_Click(object sender, EventArgs e)

@@ -355,7 +355,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Get client connection status.
         /// </summary>
-        public bool Connected { get; private set; }
+        public bool Connected { get; private set; } = true;
 
         internal TcpServerConnection(TcpServer parent, System.Net.Sockets.TcpClient client)
         {
@@ -423,9 +423,6 @@ namespace CodeArtEng.Tcp
             try
             {
                 int byteRead = TcpStream.EndRead(result);
-                Debug.WriteLine("Received " + byteRead + " bytes.");
-                BytesReceived?.Invoke(this, new BytesReceivedEventArgs(this, buffer, byteRead));
-
                 if (byteRead == 0)
                 {
                     Close();
@@ -434,6 +431,9 @@ namespace CodeArtEng.Tcp
                 }
                 else
                 {
+                    Debug.WriteLine("Received " + byteRead + " bytes.");
+                    BytesReceived?.Invoke(this, new BytesReceivedEventArgs(this, buffer, byteRead));
+                    
                     //Build string until delimeter character is detected.
                     EventHandler<MessageReceivedEventArgs> OnMessageReceived = MessageReceived;
                     if (OnMessageReceived != null)

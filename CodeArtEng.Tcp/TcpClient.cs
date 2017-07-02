@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 namespace CodeArtEng.Tcp
 {
-    //ToDo: Handle Write Timeout
-
     /// <summary>
     /// TCP Client Implementation
     /// </summary>
@@ -19,6 +18,18 @@ namespace CodeArtEng.Tcp
         private byte[] FixedBuffer;
         private int BufferSize;
         private bool ConnectState = false;
+
+        private bool IncomingDataMonitoringThreadActive = true;
+        private Thread IncomingDataMonitoring = null;
+        
+        /// <summary>
+        /// Occurs when incoming message is detected on input message buffer.
+        /// </summary>
+        /// <remarks>Event subscription had to be done before calling <see cref="Connect"/>. 
+        /// A monitoring thread will be launched to watch <see cref="NetworkStream.DataAvailable"/> flag in function <see cref="Connect"/> 
+        /// if and only if DataReceived event is subscribed.
+        /// </remarks>
+        public event EventHandler DataReceived;
 
         /// <summary>
         /// Occurs when connection is established / disconnected.
@@ -89,6 +100,13 @@ namespace CodeArtEng.Tcp
             Connected = true;
             BufferSize = Client.ReceiveBufferSize;
             FixedBuffer = new byte[BufferSize];
+
+            if (DataReceived != null)
+            {
+                IncomingDataMonitoringThreadActive = true;
+                IncomingDataMonitoring = new Thread(MonitorIncomingData);
+                IncomingDataMonitoring.Start();
+            }
         }
 
         /// <summary>
@@ -96,7 +114,15 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public void Disconnect()
         {
-            if (Connected) Client.GetStream().Close();
+            //Gentle close, terminating thread properly
+            IncomingDataMonitoringThreadActive = false;
+            Thread.Sleep(10);
+            IncomingDataMonitoring?.Abort();
+            IncomingDataMonitoring = null;
+
+            TcpStream?.Close();
+            TcpStream = null;
+
             Client.Close();
             Client = new System.Net.Sockets.TcpClient();
             Connected = false;
@@ -186,6 +212,29 @@ namespace CodeArtEng.Tcp
         {
             if (!Connected) Connect();
             return ASCIIEncoding.ASCII.GetString(ReadBytes());
+        }
+
+        private void MonitorIncomingData()
+        {
+            bool incomingData = TcpStream.DataAvailable;
+            while (IncomingDataMonitoringThreadActive) //Loop forever
+            {
+                if (!incomingData)
+                {
+                    if (TcpStream.DataAvailable)
+                    {
+                        incomingData = true;
+                        DataReceived?.Invoke(this, null);
+                    }
+                }
+                else
+                {
+                    if (!TcpStream.DataAvailable)
+                        incomingData = false;
+                }
+                Thread.Sleep(1);
+            }
+
         }
     }
 }

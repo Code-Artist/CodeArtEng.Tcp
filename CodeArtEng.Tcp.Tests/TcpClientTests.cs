@@ -89,6 +89,7 @@ namespace CodeArtEng.Tcp.Tests
             Server.ClientConnected += Server_ClientConnected;
             Thread.Sleep(500);
             Client = new TcpClient("127.0.0.1", port);
+            Client.DataReceived += Client_DataReceived;
             Client.Connect();
             Client.ReadTimeout = 500;
             for (int x = 0; x < 10; x++)
@@ -99,6 +100,7 @@ namespace CodeArtEng.Tcp.Tests
             }
             Trace.WriteLine("Client Connected");
         }
+
 
         [TestFixtureTearDown]
         public void TearDown()
@@ -127,7 +129,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             Assert.AreEqual("127.0.0.1", Client.HostName);
         }
-        
+
         [Test]
         public void ConnectionPort()
         {
@@ -141,7 +143,7 @@ namespace CodeArtEng.Tcp.Tests
             TcpDelay();
             string returnString = Client.ReadString();
             Assert.AreEqual("Server [Message from Client] ACK.", returnString);
-            
+
         }
 
         [Test]
@@ -156,6 +158,31 @@ namespace CodeArtEng.Tcp.Tests
         public void ReadUntilTimeout()
         {
             Client.ReadBytes();
+        }
+
+
+        private bool DataReceiveEventRaised;
+        private string DataReceived;
+        private bool ReadDataByEvent = false;
+        private void Client_DataReceived(object sender, EventArgs e)
+        {
+            if (!ReadDataByEvent) return;
+            DataReceived = Client.ReadString();
+            DataReceiveEventRaised = true;
+            ReadDataByEvent = false;
+        }
+
+        [Test]
+        public void ClientMessageReceivedEvent()
+        {
+            DataReceiveEventRaised = false;
+            DataReceived = string.Empty;
+            ReadDataByEvent = true;
+
+            foreach (TcpServerConnection client in Server.Clients) client.WriteToClient("Testing_ABCD");
+            Thread.Sleep(100);
+            Assert.AreEqual(true, DataReceiveEventRaised);
+            Assert.AreEqual("Testing_ABCD", DataReceived);
         }
     }
 }
