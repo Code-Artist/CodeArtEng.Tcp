@@ -5,6 +5,10 @@ This library is not meant to be deployed for web server.
 
 <b>NuGet Package:</b>https://www.nuget.org/packages/CodeArtEng.Tcp/
 
+<b>Architecture Overview</b>
+
+![alt text](https://github.com/Code-Artist/CodeArtEng.Tcp/blob/master/Doc/ClassDiagram.PNG)
+
 TCP Server:
 - Multi-threaded TCP server with multi client support.
 - Detect client connect / disconnect.
