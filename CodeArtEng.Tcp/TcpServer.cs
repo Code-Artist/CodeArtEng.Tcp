@@ -431,7 +431,7 @@ namespace CodeArtEng.Tcp
                 }
                 else
                 {
-                    Debug.WriteLine("Received " + byteRead + " bytes.");
+                    //Debug.WriteLine("Received " + byteRead + " bytes.");
                     BytesReceived?.Invoke(this, new BytesReceivedEventArgs(this, buffer, byteRead));
                     
                     //Build string until delimeter character is detected.

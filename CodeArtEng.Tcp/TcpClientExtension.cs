@@ -20,11 +20,17 @@ namespace System.Net.Sockets
 
         private static TcpState GetState(TcpClient sender)
         {
-            var prop =
-                IPGlobalProperties.GetIPGlobalProperties()
-                .GetActiveTcpConnections()
-                .SingleOrDefault(x => x.LocalEndPoint.Equals(sender.Client.LocalEndPoint));
-            return prop != null ? prop.State : TcpState.Unknown;
+            if (sender == null) return TcpState.Unknown;
+            if (sender.Client == null) return TcpState.Closed;
+            try
+            {
+                var prop =
+                    IPGlobalProperties.GetIPGlobalProperties()
+                    .GetActiveTcpConnections()
+                    .SingleOrDefault(x => x.LocalEndPoint.Equals(sender.Client.LocalEndPoint));
+                return prop != null ? prop.State : TcpState.Unknown;
+            }
+            catch { return TcpState.Unknown; }
         }
 
 

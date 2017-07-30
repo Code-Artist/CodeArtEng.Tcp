@@ -77,7 +77,9 @@ namespace CodeArtEng.Tcp
             get
             {
                 bool state = Client.IsConnected();
+                if (state == ConnectState) return ConnectState;
                 ConnectState = state;
+                ConnectionStatusChanged?.Invoke(this, null);
                 return state;
             }
 
@@ -123,9 +125,9 @@ namespace CodeArtEng.Tcp
             TcpStream?.Close();
             TcpStream = null;
 
+            Connected = false;
             Client.Close();
             Client = new System.Net.Sockets.TcpClient();
-            Connected = false;
         }
 
         /// <summary>
