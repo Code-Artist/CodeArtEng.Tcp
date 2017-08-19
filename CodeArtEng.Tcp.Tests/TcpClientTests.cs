@@ -1,12 +1,9 @@
-﻿using System;
-using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NUnit.Framework;
-using System.Net.Sockets;
+﻿using NUnit.Framework;
+using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace CodeArtEng.Tcp.Tests
 {
@@ -69,6 +66,37 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpClient client = new TcpClient("127.0.0.1", 90000);
             client.Connect();
+        }
+
+        private bool ClientConnectFlag = false;
+        private TcpClient Client1;
+        [Test]
+        public void ClientConnectDisconnect_Event()
+        {
+            TcpServer server = new TcpServer("TestServer-Event");
+            server.Start(12200);
+            try
+            {
+                Client1 = new TcpClient("127.0.0.1", 12200);
+                Client1.ConnectionStatusChanged += Client_ConnectionStatusChanged;
+                Client1.Connect();
+                Thread.Sleep(200);
+                Assert.AreEqual(true, ClientConnectFlag);
+
+                server.Stop();
+                Thread.Sleep(200);
+                Assert.AreEqual(false, ClientConnectFlag);
+            }
+            finally
+            {
+                Client1.Disconnect();
+                server.Dispose();
+            }
+        }
+
+        private void Client_ConnectionStatusChanged(object sender, EventArgs e)
+        {
+            ClientConnectFlag = Client1.Connected;
         }
     }
 

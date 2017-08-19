@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -21,6 +20,8 @@ namespace CodeArtEng.Tcp
 
         private bool IncomingDataMonitoringThreadActive = true;
         private Thread IncomingDataMonitoring = null;
+
+        private Thread ConnectionMonitoring = null;
         
         /// <summary>
         /// Occurs when incoming message is detected on input message buffer.
@@ -109,6 +110,9 @@ namespace CodeArtEng.Tcp
                 IncomingDataMonitoring = new Thread(MonitorIncomingData);
                 IncomingDataMonitoring.Start();
             }
+
+            ConnectionMonitoring = new Thread(MonitorConnection);
+            ConnectionMonitoring.Start();
         }
 
         /// <summary>
@@ -234,9 +238,18 @@ namespace CodeArtEng.Tcp
                     if (!TcpStream.DataAvailable)
                         incomingData = false;
                 }
+                bool isConnect = Connected; //Read connection status
                 Thread.Sleep(1);
             }
 
+        }
+
+        private void MonitorConnection()
+        {
+            while(Connected)
+            {
+                Thread.Sleep(100);
+            }
         }
     }
 }

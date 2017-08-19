@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CodeArtEng.Tcp;
+using System;
 using System.Windows.Forms;
-using CodeArtEng.Tcp;
 
 namespace TcpServerExample
 {
