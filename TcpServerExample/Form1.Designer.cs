@@ -30,12 +30,12 @@
         {
             this.propertyGrid1 = new System.Windows.Forms.PropertyGrid();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.btStart = new System.Windows.Forms.Button();
-            this.txtPort = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.txtReply = new System.Windows.Forms.TextBox();
-            this.txtInput = new System.Windows.Forms.TextBox();
             this.lbInput = new System.Windows.Forms.Label();
+            this.txtInput = new System.Windows.Forms.TextBox();
+            this.txtReply = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.txtPort = new System.Windows.Forms.TextBox();
+            this.btStart = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -61,23 +61,30 @@
             this.panel1.Size = new System.Drawing.Size(574, 90);
             this.panel1.TabIndex = 1;
             // 
-            // btStart
+            // lbInput
             // 
-            this.btStart.Location = new System.Drawing.Point(11, 8);
-            this.btStart.Name = "btStart";
-            this.btStart.Size = new System.Drawing.Size(75, 23);
-            this.btStart.TabIndex = 0;
-            this.btStart.Text = "Start";
-            this.btStart.UseVisualStyleBackColor = true;
-            this.btStart.Click += new System.EventHandler(this.btStart_Click);
+            this.lbInput.AutoSize = true;
+            this.lbInput.Location = new System.Drawing.Point(55, 39);
+            this.lbInput.Name = "lbInput";
+            this.lbInput.Size = new System.Drawing.Size(31, 13);
+            this.lbInput.TabIndex = 5;
+            this.lbInput.Text = "Input";
             // 
-            // txtPort
+            // txtInput
             // 
-            this.txtPort.Location = new System.Drawing.Point(92, 10);
-            this.txtPort.Name = "txtPort";
-            this.txtPort.Size = new System.Drawing.Size(73, 20);
-            this.txtPort.TabIndex = 1;
-            this.txtPort.Text = "10000";
+            this.txtInput.Location = new System.Drawing.Point(92, 36);
+            this.txtInput.Name = "txtInput";
+            this.txtInput.ReadOnly = true;
+            this.txtInput.Size = new System.Drawing.Size(470, 20);
+            this.txtInput.TabIndex = 4;
+            // 
+            // txtReply
+            // 
+            this.txtReply.Location = new System.Drawing.Point(92, 62);
+            this.txtReply.Name = "txtReply";
+            this.txtReply.Size = new System.Drawing.Size(470, 20);
+            this.txtReply.TabIndex = 3;
+            this.txtReply.Text = "ACK";
             // 
             // label1
             // 
@@ -88,30 +95,23 @@
             this.label1.TabIndex = 2;
             this.label1.Text = "Auto Reply Text";
             // 
-            // txtReply
+            // txtPort
             // 
-            this.txtReply.Location = new System.Drawing.Point(92, 62);
-            this.txtReply.Name = "txtReply";
-            this.txtReply.Size = new System.Drawing.Size(470, 20);
-            this.txtReply.TabIndex = 3;
-            this.txtReply.Text = "ACK";
+            this.txtPort.Location = new System.Drawing.Point(92, 10);
+            this.txtPort.Name = "txtPort";
+            this.txtPort.Size = new System.Drawing.Size(73, 20);
+            this.txtPort.TabIndex = 1;
+            this.txtPort.Text = "9999";
             // 
-            // txtInput
+            // btStart
             // 
-            this.txtInput.Location = new System.Drawing.Point(92, 36);
-            this.txtInput.Name = "txtInput";
-            this.txtInput.ReadOnly = true;
-            this.txtInput.Size = new System.Drawing.Size(470, 20);
-            this.txtInput.TabIndex = 4;
-            // 
-            // lbInput
-            // 
-            this.lbInput.AutoSize = true;
-            this.lbInput.Location = new System.Drawing.Point(55, 39);
-            this.lbInput.Name = "lbInput";
-            this.lbInput.Size = new System.Drawing.Size(31, 13);
-            this.lbInput.TabIndex = 5;
-            this.lbInput.Text = "Input";
+            this.btStart.Location = new System.Drawing.Point(11, 8);
+            this.btStart.Name = "btStart";
+            this.btStart.Size = new System.Drawing.Size(75, 23);
+            this.btStart.TabIndex = 0;
+            this.btStart.Text = "Start";
+            this.btStart.UseVisualStyleBackColor = true;
+            this.btStart.Click += new System.EventHandler(this.btStart_Click);
             // 
             // Form1
             // 

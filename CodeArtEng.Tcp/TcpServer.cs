@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 
@@ -43,6 +45,11 @@ namespace CodeArtEng.Tcp
     {
         private TcpListener listener;
         private Thread ConnectionMonitoring = null;
+
+        /// <summary>
+        /// Set/Get certuificate for server.
+        /// </summary>
+        public X509Certificate2 Certificate { get; set; }
 
         /// <summary>
         /// Server name. Shown in <see cref="Trace"/> log.
@@ -232,7 +239,9 @@ namespace CodeArtEng.Tcp
                         if (eArgs.Accept)
                         {
                             //Connection Accepted
-                            TcpServerConnection newConnection = new TcpServerConnection(this, client);
+                            TcpServerConnection newConnection = null;
+
+                            newConnection = new TcpServerConnection(this, client, Certificate);
                             newConnection.MessageDelimiter = MessageDelimiter;
                             Trace.WriteLine(Name + ": Connection Accepted: Client = " + newConnection.ClientIPAddress);
                             newConnection.ClientDisconnected += OnClientDisconnected;
@@ -311,7 +320,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Incoming message in byte array.
         /// </summary>
-        public byte [] ReceivedBytes { get; set; }
+        public byte[] ReceivedBytes { get; set; }
     }
 
     /// <summary>
@@ -322,6 +331,13 @@ namespace CodeArtEng.Tcp
         private System.Net.Sockets.TcpClient Client;
         private TcpServer Server;
         private NetworkStream TcpStream;
+
+        /// <summary>
+        /// SSL Stream for the connected client.
+        /// </summary>
+        public SslStream SecureStream { get; set; }
+        private Boolean UseSSL = false;
+
         private int BufferSize;
         private byte[] buffer;
         private string Message;
@@ -357,16 +373,27 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public bool Connected { get; private set; } = true;
 
-        internal TcpServerConnection(TcpServer parent, System.Net.Sockets.TcpClient client)
+        internal TcpServerConnection(TcpServer parent, System.Net.Sockets.TcpClient client, X509Certificate2 cert)
         {
             Server = parent;
             Client = client;
             BufferSize = Client.ReceiveBufferSize;
-            TcpStream = Client.GetStream();
-            ClientIPAddress = ((IPEndPoint)Client.Client.RemoteEndPoint).Address;
 
+            if (cert != null)
+            {
+                SecureStream = new SslStream(Client.GetStream());
+                SecureStream.AuthenticateAsServer(cert);
+                UseSSL = true;
+                SecureStream.Flush();
+            }
+            else
+            {
+                TcpStream = Client.GetStream();
+                TcpStream.Flush();
+            }
+
+            ClientIPAddress = ((IPEndPoint)Client.Client.RemoteEndPoint).Address;
             buffer = new byte[BufferSize];
-            TcpStream.Flush();
             Message = string.Empty;
             MessageBuffer = new List<byte>();
             BeginRead();
@@ -409,20 +436,43 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public void Close()
         {
-            TcpStream.Close();
+            if (UseSSL)
+            {
+                SecureStream.Close();
+            }
+            else
+            {
+                TcpStream.Close();
+            }
             Connected = false;
         }
 
         private void BeginRead()
         {
-            TcpStream.BeginRead(buffer, 0, BufferSize, EndRead, TcpStream);
+            if (UseSSL)
+            {
+                SecureStream.BeginRead(buffer, 0, BufferSize, EndRead, SecureStream);
+            }
+            else
+            {
+                TcpStream.BeginRead(buffer, 0, BufferSize, EndRead, TcpStream);
+            }
         }
 
         private void EndRead(IAsyncResult result)
         {
             try
             {
-                int byteRead = TcpStream.EndRead(result);
+                int byteRead;
+                if (UseSSL)
+                {
+                    byteRead = SecureStream.EndRead(result);
+                }
+                else
+                {
+                    byteRead = TcpStream.EndRead(result);
+                }
+
                 if (byteRead == 0)
                 {
                     Close();
@@ -432,8 +482,12 @@ namespace CodeArtEng.Tcp
                 else
                 {
                     //Debug.WriteLine("Received " + byteRead + " bytes.");
+
+                    Console.WriteLine("----------------------------------------------");
+                    Console.WriteLine("Received " + byteRead + " bytes.");
+
                     BytesReceived?.Invoke(this, new BytesReceivedEventArgs(this, buffer, byteRead));
-                    
+
                     //Build string until delimeter character is detected.
                     EventHandler<MessageReceivedEventArgs> OnMessageReceived = MessageReceived;
                     if (OnMessageReceived != null)
@@ -451,7 +505,7 @@ namespace CodeArtEng.Tcp
                                 byte[] messageBytes = MessageBuffer.ToArray();
                                 Message = Encoding.ASCII.GetString(messageBytes);
                                 MessageBuffer.Clear();
-                                OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message , ReceivedBytes = messageBytes});
+                                OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
                             }
                         }
                     }
@@ -487,8 +541,16 @@ namespace CodeArtEng.Tcp
         /// <param name="buffer"></param>
         public void WriteToClient(byte[] buffer)
         {
-            TcpStream.Write(buffer, 0, buffer.Length);
-            TcpStream.Flush();
+            if (UseSSL)
+            {
+                SecureStream.Write(buffer, 0, buffer.Length);
+                SecureStream.Flush();
+            }
+            else
+            {
+                TcpStream.Write(buffer, 0, buffer.Length);
+                TcpStream.Flush();
+            }
         }
 
         /// <summary>
