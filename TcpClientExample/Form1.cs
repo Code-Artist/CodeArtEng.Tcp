@@ -15,9 +15,20 @@ namespace TcpClientExample
             Client.HostName = "127.0.0.1";
             Client.Port = 10000;
             Client.DataReceived += Client_DataReceived;
+            Client.ConnectionStatusChanged += Client_ConnectionStatusChanged;
             propertyGrid1.SelectedObject = Client;
             btWrite.Enabled = false;
             btRead.Enabled = false;
+        }
+
+        private void Client_ConnectionStatusChanged(object sender, EventArgs e)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new DelMethod(Client_ConnectionStatusChanged), new object[] { sender, e });
+                return;
+            }
+            propertyGrid1.Refresh();
         }
 
         private delegate void DelMethod(object sender, BytesReceivedEventArgs e);
@@ -52,7 +63,8 @@ namespace TcpClientExample
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Client.Disconnect();
+            Client.Dispose();
+            Client = null;
         }
     }
 }

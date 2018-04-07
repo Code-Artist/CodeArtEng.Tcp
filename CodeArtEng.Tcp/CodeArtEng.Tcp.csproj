@@ -41,8 +41,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TcpAppClient.cs" />
+    <Compile Include="TcpAppServer.cs" />
     <Compile Include="TcpClient.cs" />
     <Compile Include="TcpClientExtension.cs" />
+    <Compile Include="TcpDataReceivedEventArgs.cs" />
     <Compile Include="TcpServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

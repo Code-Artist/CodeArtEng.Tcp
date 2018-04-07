@@ -117,7 +117,6 @@ namespace CodeArtEng.Tcp.Tests
             Server.ClientConnected += Server_ClientConnected;
             Thread.Sleep(500);
             Client = new TcpClient("127.0.0.1", port);
-            Client.DataReceived += Client_DataReceived;
             Client.Connect();
             Client.ReadTimeout = 500;
             for (int x = 0; x < 10; x++)
@@ -135,6 +134,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             Debug.WriteLine("Test Fixture Tear Down");
             Server.Stop();
+            Client.Dispose();
             Client = null;
         }
 
@@ -171,7 +171,6 @@ namespace CodeArtEng.Tcp.Tests
             TcpDelay();
             string returnString = Client.ReadString();
             Assert.AreEqual("Server [Message from Client] ACK.", returnString);
-
         }
 
         [Test]
@@ -183,19 +182,18 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         [Test, ExpectedException(typeof(TimeoutException))]
-        public void ReadUntilTimeout()
+        public void ReadEmptyBuffer_TimeoutException()
         {
             Client.ReadBytes();
         }
 
-
         private bool DataReceiveEventRaised;
         private string DataReceived;
         private bool ReadDataByEvent = false;
-        private void Client_DataReceived(object sender, EventArgs e)
+        private void Client_DataReceived(object sender, TcpDataReceivedEventArgs e)
         {
             if (!ReadDataByEvent) return;
-            DataReceived = Client.ReadString();
+            DataReceived = e.GetString();
             DataReceiveEventRaised = true;
             ReadDataByEvent = false;
         }
@@ -203,14 +201,51 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ClientMessageReceivedEvent()
         {
-            DataReceiveEventRaised = false;
-            DataReceived = string.Empty;
-            ReadDataByEvent = true;
+            Client.DataReceived += Client_DataReceived;
+            try
+            {
+                DataReceiveEventRaised = false;
+                DataReceived = string.Empty;
+                ReadDataByEvent = true;
 
-            foreach (TcpServerConnection client in Server.Clients) client.WriteToClient("Testing_ABCD");
-            Thread.Sleep(100);
-            Assert.AreEqual(true, DataReceiveEventRaised);
-            Assert.AreEqual("Testing_ABCD", DataReceived);
+                foreach (TcpServerConnection client in Server.Clients)
+                    client.WriteToClient("Testing_ABCD");
+                Thread.Sleep(500);
+                Assert.AreEqual(true, DataReceiveEventRaised);
+                Assert.AreEqual("Testing_ABCD", DataReceived);
+            }
+            finally { Client.DataReceived -= Client_DataReceived; }
+        }
+
+        //[Test]
+        public void ClientConnectionStatusChangedEvent()
+        {
+            try
+            {
+                Client.ConnectionStatusChanged += Client_ConnectionStatusChanged;
+                ConnectionStatusChangedEventRaised = false;
+                Client.Disconnect();
+                Assert.AreEqual(true, ConnectionStatusChangedEventRaised);
+
+                Client.Connect();
+                Assert.AreEqual(true, ConnectionStatusChangedEventRaised);
+            }
+            catch
+            {
+                Assert.Fail();
+            }
+            finally
+            {
+                Client.ConnectionStatusChanged -= Client_ConnectionStatusChanged;
+                Client.Connect();
+            }
+
+        }
+
+        private bool ConnectionStatusChangedEventRaised = false;
+        private void Client_ConnectionStatusChanged(object sender, EventArgs e)
+        {
+            ConnectionStatusChangedEventRaised = true;
         }
     }
 }

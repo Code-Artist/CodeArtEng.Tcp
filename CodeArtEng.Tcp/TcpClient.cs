@@ -9,28 +9,28 @@ namespace CodeArtEng.Tcp
     /// <summary>
     /// TCP Client Implementation
     /// </summary>
-    public class TcpClient
+    public class TcpClient : IDisposable
     {
         private System.Net.Sockets.TcpClient Client = new System.Net.Sockets.TcpClient();
         private NetworkStream TcpStream;
-        private List<byte> ByteBuffer = new List<byte>();
         private byte[] FixedBuffer;
         private int BufferSize;
         private bool ConnectState = false;
+        private readonly object LockHandler = new object();
 
-        private bool IncomingDataMonitoringThreadActive = true;
+        private bool MonitoringThreadActive = true;
         private Thread IncomingDataMonitoring = null;
 
         private Thread ConnectionMonitoring = null;
-        
+
         /// <summary>
-        /// Occurs when incoming message is detected on input message buffer.
+        /// Occurs when incoming message is detected on input message buffer, cross thread event.
         /// </summary>
         /// <remarks>Event subscription had to be done before calling <see cref="Connect"/>. 
         /// A monitoring thread will be launched to watch <see cref="NetworkStream.DataAvailable"/> flag in function <see cref="Connect"/> 
         /// if and only if DataReceived event is subscribed.
         /// </remarks>
-        public event EventHandler DataReceived;
+        public event EventHandler<TcpDataReceivedEventArgs> DataReceived;
 
         /// <summary>
         /// Occurs when connection is established / disconnected.
@@ -104,15 +104,16 @@ namespace CodeArtEng.Tcp
             BufferSize = Client.ReceiveBufferSize;
             FixedBuffer = new byte[BufferSize];
 
-            if (DataReceived != null)
-            {
-                IncomingDataMonitoringThreadActive = true;
-                IncomingDataMonitoring = new Thread(MonitorIncomingData);
-                IncomingDataMonitoring.Start();
-            }
+            MonitoringThreadActive = true;
+            IncomingDataMonitoring = new Thread(MonitorIncomingData);
+            IncomingDataMonitoring.Name = "TCP Client Data Monitoring @ " + Port.ToString();
+            IncomingDataMonitoring.Start();
 
             ConnectionMonitoring = new Thread(MonitorConnection);
+            ConnectionMonitoring.Name = "TCP Client Connection Monitoring @ " + Port.ToString();
             ConnectionMonitoring.Start();
+
+            ConnectionStatusChanged?.Invoke(this, null);
         }
 
         /// <summary>
@@ -121,17 +122,21 @@ namespace CodeArtEng.Tcp
         public void Disconnect()
         {
             //Gentle close, terminating thread properly
-            IncomingDataMonitoringThreadActive = false;
-            Thread.Sleep(10);
-            IncomingDataMonitoring?.Abort();
-            IncomingDataMonitoring = null;
-
-            TcpStream?.Close();
-            TcpStream = null;
+            TerminateThreadsAndTCPStream();
 
             Connected = false;
             Client.Close();
             Client = new System.Net.Sockets.TcpClient();
+        }
+
+        private void TerminateThreadsAndTCPStream()
+        {
+            MonitoringThreadActive = false;
+            IncomingDataMonitoring = null;
+            ConnectionMonitoring = null;
+
+            TcpStream?.Close();
+            TcpStream = null;
         }
 
         /// <summary>
@@ -175,20 +180,27 @@ namespace CodeArtEng.Tcp
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public byte[] ReadBytes()
         {
-            if (!Connected) Connect();
-            ByteBuffer.Clear();
-
-            DateTime tStart = DateTime.Now;
-            if (ReadTimeout != -1)
+            lock (LockHandler)
             {
-                while (!TcpStream.DataAvailable)
-                {
-                    if ((DateTime.Now - tStart).TotalMilliseconds > ReadTimeout)
-                        throw new TimeoutException("Read timeout, no response from server!");
-                    System.Threading.Thread.Sleep(10);
-                }
-            }
+                if (!Connected) Connect();
 
+                DateTime tStart = DateTime.Now;
+                if (ReadTimeout != -1)
+                {
+                    while (!TcpStream.DataAvailable)
+                    {
+                        if ((DateTime.Now - tStart).TotalMilliseconds > ReadTimeout)
+                            throw new TimeoutException("Read timeout, no response from server!");
+                        Thread.Sleep(10);
+                    }
+                }
+                return readRawBytes();
+            }
+        }
+
+        private byte[] readRawBytes()
+        {
+            List<byte> ByteBuffer = new List<byte>();
             while (true)
             {
                 int readByte = TcpStream.Read(FixedBuffer, 0, BufferSize);
@@ -200,7 +212,7 @@ namespace CodeArtEng.Tcp
                 else
                 {
                     byte[] data = new byte[readByte];
-                    System.Array.Copy(FixedBuffer, data, readByte);
+                    Array.Copy(FixedBuffer, data, readByte);
                     ByteBuffer.AddRange(data);
                 }
 
@@ -222,15 +234,24 @@ namespace CodeArtEng.Tcp
 
         private void MonitorIncomingData()
         {
-            bool incomingData = TcpStream.DataAvailable;
-            while (IncomingDataMonitoringThreadActive) //Loop forever
+            bool incomingData = false;
+            while (MonitoringThreadActive) //Loop forever
             {
+                if (DataReceived == null)
+                {
+                    continue;
+                }
+
                 if (!incomingData)
                 {
                     if (TcpStream.DataAvailable)
                     {
-                        incomingData = true;
-                        DataReceived?.Invoke(this, null);
+                        lock (LockHandler)
+                        {
+                            incomingData = true;
+                            byte[] data = readRawBytes();
+                            DataReceived?.Invoke(this, new TcpDataReceivedEventArgs() { Data = data });
+                        }
                     }
                 }
                 else
@@ -239,17 +260,51 @@ namespace CodeArtEng.Tcp
                         incomingData = false;
                 }
                 bool isConnect = Connected; //Read connection status
-                Thread.Sleep(1);
+                Thread.Sleep(50);
             }
-
         }
 
         private void MonitorConnection()
         {
-            while(Connected)
+            while (MonitoringThreadActive)
             {
-                Thread.Sleep(100);
+                if (ConnectState)
+                {
+                    if (!Connected) ConnectionStatusChanged?.Invoke(this, null);
+                }
+                Thread.Sleep(50);
             }
         }
+
+        #region [ IDisposable Support ]
+        private bool disposedValue = false; // To detect redundant calls
+
+        /// <summary>
+        /// Dispose object
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    TerminateThreadsAndTCPStream();
+                    Client.Close();
+                    Client = null;
+                }
+
+                disposedValue = true;
+            }
+        }
+
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+        }
+        #endregion
     }
 }
