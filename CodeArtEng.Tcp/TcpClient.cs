@@ -237,6 +237,7 @@ namespace CodeArtEng.Tcp
             bool incomingData = false;
             while (MonitoringThreadActive) //Loop forever
             {
+                Thread.Sleep(50);
                 if (DataReceived == null)
                 {
                     continue;
@@ -260,7 +261,6 @@ namespace CodeArtEng.Tcp
                         incomingData = false;
                 }
                 bool isConnect = Connected; //Read connection status
-                Thread.Sleep(50);
             }
         }
 
