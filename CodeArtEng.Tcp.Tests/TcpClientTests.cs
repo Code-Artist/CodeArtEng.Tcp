@@ -40,12 +40,12 @@ namespace CodeArtEng.Tcp.Tests
                 client.Connect();
                 Thread.Sleep(200);
                 Assert.AreEqual(1, server.Clients.Count);
-
+                client.Dispose();
             }
         }
 
         [Test]
-        public void ServerDisconnected_ClientWrite_RaiseIOException()
+        public void ServerDisconnected_ClientConnectStatus()
         {
             using (TcpServer server = new TcpServer("TestServer2"))
             {
@@ -57,7 +57,7 @@ namespace CodeArtEng.Tcp.Tests
                 server.Stop();
                 Thread.Sleep(200);
                 Assert.AreEqual(0, server.Clients.Count);
-                Assert.AreEqual(false, client.Connected); //Property does not reflec the connection status.
+                Assert.AreEqual(false, client.Connected); //Property does not reflect the connection status.
             }
         }
 
@@ -70,6 +70,7 @@ namespace CodeArtEng.Tcp.Tests
 
         private bool ClientConnectFlag = false;
         private TcpClient Client1;
+
         [Test]
         public void ClientConnectDisconnect_Event()
         {
@@ -97,6 +98,15 @@ namespace CodeArtEng.Tcp.Tests
         private void Client_ConnectionStatusChanged(object sender, EventArgs e)
         {
             ClientConnectFlag = Client1.Connected;
+        }
+
+        [Test, ExpectedException(typeof(System.Net.Sockets.SocketException))]
+        public void ClientWriteNotConnectedToServer()
+        {
+            using (TcpClient client = new TcpClient("localhost", 11900))
+            {
+                client.Write("Testing");
+            }
         }
     }
 
@@ -181,10 +191,10 @@ namespace CodeArtEng.Tcp.Tests
             Assert.IsTrue(Client.ReadBytes().Count() != 0);
         }
 
-        [Test, ExpectedException(typeof(TimeoutException))]
-        public void ReadEmptyBuffer_TimeoutException()
+        [Test]
+        public void ReadEmptyBuffer()
         {
-            Client.ReadBytes();
+            Assert.AreEqual(0, Client.ReadBytes().Length);
         }
 
         private bool DataReceiveEventRaised;

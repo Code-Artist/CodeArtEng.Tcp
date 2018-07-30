@@ -276,13 +276,13 @@ namespace CodeArtEng.Tcp
     /// <summary>
     /// Data class for <see cref="TcpServerConnection.BytesReceived"/> event.
     /// </summary>
-    public class BytesReceivedEventArgs : EventArgs
+    public class TcpServerDataEventArgs : EventArgs
     {
-        internal BytesReceivedEventArgs(TcpServerConnection client, byte[] data, int length)
+        internal TcpServerDataEventArgs(TcpServerConnection client, byte[] data, int length)
         {
             Client = client;
-            ReceivedBytes = new byte[length];
-            Array.Copy(data, ReceivedBytes, length);
+            Data = new byte[length];
+            Array.Copy(data, Data, length);
         }
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Incoming bytes received
         /// </summary>
-        public byte[] ReceivedBytes { get; set; }
+        public byte[] Data { get; set; }
     }
 
     /// <summary>
@@ -346,7 +346,8 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Occurs when one or more bytes is sent from client.
         /// </summary>
-        public event EventHandler<BytesReceivedEventArgs> BytesReceived;
+        public event EventHandler<TcpServerDataEventArgs> BytesReceived;
+        public event EventHandler<TcpServerDataEventArgs> BytesSent;
         /// <summary>
         /// Occurs when a message terminated with <see cref="MessageDelimiter"/> is received.
         /// </summary>
@@ -432,7 +433,7 @@ namespace CodeArtEng.Tcp
                 else
                 {
                     //Debug.WriteLine("Received " + byteRead + " bytes.");
-                    BytesReceived?.Invoke(this, new BytesReceivedEventArgs(this, buffer, byteRead));
+                    BytesReceived?.Invoke(this, new TcpServerDataEventArgs(this, buffer, byteRead));
                     
                     //Build string until delimeter character is detected.
                     EventHandler<MessageReceivedEventArgs> OnMessageReceived = MessageReceived;
@@ -482,12 +483,22 @@ namespace CodeArtEng.Tcp
         }
 
         /// <summary>
+        /// Write string to client terminate with \r\n [0x0D 0x0A]
+        /// </summary>
+        /// <param name="message"></param>
+        public void WriteLineToClient(string message)
+        {
+            WriteToClient(Encoding.ASCII.GetBytes(message + "\r\n"));
+        }
+
+        /// <summary>
         /// Write byte array to client.
         /// </summary>
         /// <param name="buffer"></param>
         public void WriteToClient(byte[] buffer)
         {
             TcpStream.Write(buffer, 0, buffer.Length);
+            BytesSent?.Invoke(this, new TcpServerDataEventArgs(this, buffer, buffer.Length));
             TcpStream.Flush();
         }
 
