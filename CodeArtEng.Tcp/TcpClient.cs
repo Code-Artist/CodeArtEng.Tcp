@@ -245,7 +245,7 @@ namespace CodeArtEng.Tcp
             while (MonitoringThreadActive) //Loop forever
             {
                 DataReceivedHandler = DataReceived;
-                if (DataReceivedHandler != null) 
+                if (DataReceivedHandler != null)
                 {
                     if (!incomingData)
                     {
