@@ -20,9 +20,14 @@ namespace CodeArtEng.Tcp
 
         private bool MonitoringThreadActive = true;
         private Thread IncomingDataMonitoring = null;
-
         private Thread ConnectionMonitoring = null;
 
+        /// <summary>
+        /// Option to suspend DataReceived event trigger from base class.
+        /// Default is FALSE.
+        /// </summary>
+        public bool SuspendDataReceivedEvent { get; set; } = false;
+        
         /// <summary>
         /// Occurs when incoming message is detected on input message buffer, cross thread event.
         /// </summary>
@@ -49,11 +54,11 @@ namespace CodeArtEng.Tcp
         public int Port { get; set; }
 
         /// <summary>
-        /// Gets or sets the amount of time in miliseconds to wait for a valid response from server.
-        /// <see cref="TimeoutException"/> raised if for read operation if no response received.
+        /// Gets or sets the amount of time in miliseconds to wait for a valid response from TCP Server before read function return.
+        /// When set to -1, the read function will wait forever until response is received.
         /// </summary>
-        /// <value>Default value = -1 (Wait Forever) </value>
-        public int ReadTimeout { get; set; } = -1;
+        /// <value>Default value = 1000 ms</value>
+        public int ReadTimeout { get; set; } = 1000;
 
         /// <summary>
         /// Constructor
@@ -80,6 +85,7 @@ namespace CodeArtEng.Tcp
                 bool state = Client.IsConnected();
                 if (state == ConnectState) return ConnectState;
                 ConnectState = state;
+                if (!ConnectState) TerminateThreadsAndTCPStream();
                 ConnectionStatusChanged?.Invoke(this, null);
                 return state;
             }
@@ -95,7 +101,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Attempt to establish connection with server.
         /// </summary>
-        public void Connect()
+        public virtual void Connect()
         {
             Disconnect();
             Client.Connect(HostName, Port);
@@ -119,7 +125,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Disconnect client from server.
         /// </summary>
-        public void Disconnect()
+        public virtual void Disconnect()
         {
             //Gentle close, terminating thread properly
             TerminateThreadsAndTCPStream();
@@ -176,7 +182,6 @@ namespace CodeArtEng.Tcp
         /// Read byte array from server.
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="TimeoutException">No response recevied from server after defined <see cref="ReadTimeout"/> period.</exception>
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public byte[] ReadBytes()
         {
@@ -185,38 +190,39 @@ namespace CodeArtEng.Tcp
                 if (!Connected) Connect();
 
                 DateTime tStart = DateTime.Now;
-                if (ReadTimeout != -1)
-                {
-                    while (!TcpStream.DataAvailable)
-                    {
-                        if ((DateTime.Now - tStart).TotalMilliseconds > ReadTimeout)
-                            throw new TimeoutException("Read timeout, no response from server!");
-                        Thread.Sleep(10);
-                    }
-                }
-                return readRawBytes();
+                return ReadRawBytes();
             }
         }
 
-        private byte[] readRawBytes()
+        private byte[] ReadRawBytes()
         {
+            TcpStream.ReadTimeout = ReadTimeout;
             List<byte> ByteBuffer = new List<byte>();
             while (true)
             {
-                int readByte = TcpStream.Read(FixedBuffer, 0, BufferSize);
-                if (readByte == 0) break;
-                else if (readByte == BufferSize)
+                int readByte = 0;
+                try
                 {
-                    ByteBuffer.AddRange(FixedBuffer);
-                }
-                else
-                {
-                    byte[] data = new byte[readByte];
-                    Array.Copy(FixedBuffer, data, readByte);
-                    ByteBuffer.AddRange(data);
-                }
+                    readByte = TcpStream.Read(FixedBuffer, 0, BufferSize);
+                    if (readByte == 0) break;
+                    else if (readByte == BufferSize)
+                    {
+                        ByteBuffer.AddRange(FixedBuffer);
+                    }
+                    else
+                    {
+                        byte[] data = new byte[readByte];
+                        Array.Copy(FixedBuffer, data, readByte);
+                        ByteBuffer.AddRange(data);
+                    }
 
-                if (!TcpStream.DataAvailable) break;
+                    if (!TcpStream.DataAvailable) break;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("WARNING: Exception raise from readRawByte(): " + ex);
+                    return ByteBuffer.ToArray(); //Empty Array
+                }
             }
             return ByteBuffer.ToArray();
         }
@@ -235,31 +241,30 @@ namespace CodeArtEng.Tcp
         private void MonitorIncomingData()
         {
             bool incomingData = false;
+            EventHandler<TcpDataReceivedEventArgs> DataReceivedHandler;
             while (MonitoringThreadActive) //Loop forever
             {
-                if (DataReceived == null)
+                DataReceivedHandler = DataReceived;
+                if (DataReceivedHandler != null)
                 {
-                    continue;
-                }
-
-                if (!incomingData)
-                {
-                    if (TcpStream.DataAvailable)
+                    if (!incomingData)
                     {
-                        lock (LockHandler)
+                        if (TcpStream.DataAvailable)
                         {
-                            incomingData = true;
-                            byte[] data = readRawBytes();
-                            DataReceived?.Invoke(this, new TcpDataReceivedEventArgs() { Data = data });
+                            lock (LockHandler)
+                            {
+                                incomingData = true;
+                                byte[] data = ReadRawBytes();
+                                if (data.Length > 0) DataReceivedHandler.Invoke(this, new TcpDataReceivedEventArgs() { Data = data });
+                            }
                         }
                     }
+                    else
+                    {
+                        if (!TcpStream.DataAvailable)
+                            incomingData = false;
+                    }
                 }
-                else
-                {
-                    if (!TcpStream.DataAvailable)
-                        incomingData = false;
-                }
-                bool isConnect = Connected; //Read connection status
                 Thread.Sleep(50);
             }
         }
@@ -298,7 +303,9 @@ namespace CodeArtEng.Tcp
             }
         }
 
-
+        /// <summary>
+        /// Dispose
+        /// </summary>
         // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {

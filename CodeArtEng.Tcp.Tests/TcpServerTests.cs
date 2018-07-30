@@ -22,6 +22,11 @@ namespace CodeArtEng.Tcp.Tests
             ServerStoppedEvent = false;
         }
 
+        private void Server_ClientDisconnected(object sender, TcpServerEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
         [Test]
         public void StartStopServerPort1000()
         {
@@ -51,6 +56,7 @@ namespace CodeArtEng.Tcp.Tests
 
         private bool ClientConnectingEvent = false;
         private bool ClientConnectedEvent = false;
+        private bool ClientDisconnectedEvent = false;
 
         [Test]
         public void ClientConnectEventsTest()
@@ -94,8 +100,6 @@ namespace CodeArtEng.Tcp.Tests
             }
         }
 
-        private bool ClientDisconnectedEvent = false;
-
         [Test]
         public void ClientDisconnectFromServer()
         {
@@ -127,6 +131,7 @@ namespace CodeArtEng.Tcp.Tests
                 List<TcpClient> Clients = new List<TcpClient>();
 
                 server.Start(10020);
+                server.ClientDisconnected += (sender, e) => { server.Clients.Remove(e.Client); };
                 TcpDelay();
                 for (int x = 0; x < ClientCount; x++)
                 {
@@ -135,6 +140,7 @@ namespace CodeArtEng.Tcp.Tests
                     client.Connect();
                 }
 
+                TcpDelay();
                 TcpDelay();
                 Assert.AreEqual(ClientCount, server.Clients.Count);
 
@@ -165,6 +171,7 @@ namespace CodeArtEng.Tcp.Tests
                     Clients.Add(client);
                     client.Connect();
                 }
+                Thread.Sleep(1000);
 
                 TcpDelay();
                 Assert.AreEqual(ClientCount, server.Clients.Count);
@@ -274,9 +281,9 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         private byte[] Data;
-        private void TcpServerTest_BytesReceived(object sender, BytesReceivedEventArgs e)
+        private void TcpServerTest_BytesReceived(object sender, TcpServerDataEventArgs e)
         {
-            Data = e.ReceivedBytes;
+            Data = e.Data;
         }
 
         [Test]
