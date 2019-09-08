@@ -12,9 +12,9 @@ namespace CodeArtEng.Tcp.Tests
     public class TcpAppServerTests
     {
         private TcpAppServer Server = new TcpAppServer(null);
-        private TcpClient Client = new TcpClient("localhost", 25000);
+        private TcpAppClient Client = new TcpAppClient("localhost", 25000);
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Setup()
         {
             Server.Start(25000);
@@ -25,7 +25,7 @@ namespace CodeArtEng.Tcp.Tests
             Debug.WriteLine("Fixture Setup Completed.");
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             Server.Dispose(); Server = null;
@@ -34,17 +34,11 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         [Test]
-        public void InitServer()
-        {
-            TcpAppServer server = new TcpAppServer(null);
-        }
-
-        [Test, ExpectedException(typeof(ArgumentException))]
         public void RegisterDuplicatedCommand_ArgumentException()
         {
             TcpAppServer server = new TcpAppServer(null);
             server.RegisterCommand("DummyCommand", "Dummy", null);
-            server.RegisterCommand("dummycommand", "Dummy", null);
+            Assert.Throws<ArgumentException>(() => { server.RegisterCommand("dummycommand", "Dummy", null); });
         }
 
         [Test]
@@ -57,31 +51,40 @@ namespace CodeArtEng.Tcp.Tests
             }
         }
 
-        private string ExecuteCommand(string command)
+        private TcpAppCommandResult ExecuteCommand(string command)
         {
-            Client.Write("#TCP# " + command + "\r\n");
-            return Client.ReadString();
+            return Client.ExecuteCommand(command);
+        }
+
+        [Test]
+        public void ExecuteCommand_InvalidCommand_Error()
+        {
+            Assert.Throws<TcpAppClientException>(() => { ExecuteCommand("BigBadWolf"); });
         }
 
         [Test]
         public void SystemCommand_TcpAppInit()
         {
-            string result = ExecuteCommand("TcpAppInit");
-            Assert.AreEqual("#TCP# TcpAppInit OK NUnit 2.6.2.12296\r\n", result);
+            TcpAppCommandResult result = ExecuteCommand("TcpAppInit");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            Assert.AreEqual("Microsoft.TestHost.x86 16.0.1", result.ReturnMessage);
         }
+
 
         [Test]
         public void SystemCommand_ProgramName()
         {
-            string result = ExecuteCommand("programNAME?");
-            Assert.AreEqual("#TCP# ProgramName? OK NUnit\r\n", result);
+            TcpAppCommandResult result = ExecuteCommand("applicationNAME?");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            Assert.AreEqual("Microsoft.TestHost.x86", result.ReturnMessage);
         }
 
         [Test]
         public void SystemCommand_ProgramVersion()
         {
-            string result = ExecuteCommand("ProgramVersion?");
-            Assert.AreEqual("#TCP# ProgramVersion? OK " + System.Reflection.Assembly.GetCallingAssembly().GetName().Version.ToString() + "\r\n", result);
+            TcpAppCommandResult result = ExecuteCommand("Applicationversion?");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            Assert.AreEqual("16.0.1", result.ReturnMessage);
         }
 
         [TestCase("MinimizeWindow")]
@@ -91,26 +94,23 @@ namespace CodeArtEng.Tcp.Tests
         public void SystemCommand_GUI_MainForm_NULL(string command)
         {
             //ToDo: Assign dummy main form for test?
-            string result = ExecuteCommand(command);
-            Assert.AreEqual("#TCP# " + command + " ERR Main Form not assigned!\r\n", result);
+            TcpAppCommandResult result = ExecuteCommand(command);
+            Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
+            Assert.AreEqual("Main Form not assigned!", result.ReturnMessage);
         }
 
         [Test]
         public void SystemCommand_Help()
         {
-            string result = ExecuteCommand("Help");
-            Console.WriteLine(result);
+            TcpAppCommandResult result = ExecuteCommand("Help");
+            Console.WriteLine(result.ReturnMessage);
             List<string> lines = new List<string>();
-            lines.AddRange(result.Split('\n'));
-            //Check first line in help contents
-            Assert.IsTrue(lines[0].StartsWith("#TCP# Help OK TCP Aplication Server Version"));
-        }
+            lines.AddRange(result.ReturnMessage.Split('\n'));
 
-        [Test]
-        public void Execute_InvalidCommand_Error()
-        {
-            string result = ExecuteCommand("BigBadWolf");
-            Assert.AreEqual("#TCP# BigBadWolf ERR Invalid Command!\r\n", result);
+            //Check first line in help contents
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            Assert.Greater(lines.Count, 10);
+            Assert.IsTrue(lines[0].StartsWith("TCP Aplication Server Version"));
         }
 
     }

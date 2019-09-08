@@ -13,7 +13,7 @@ namespace CodeArtEng.Tcp.Tests
         private TcpAppServer Server;
         private TcpAppClient Client;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Setup()
         {
             Server = new TcpAppServer(null);
@@ -22,7 +22,7 @@ namespace CodeArtEng.Tcp.Tests
             Client = new TcpAppClient("localhost", 12500);
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             Server.Stop();

@@ -45,9 +45,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ITcpAppServerPlugin.cs" />
     <Compile Include="TcpAppClient.cs" />
+    <Compile Include="TcpAppClientException.cs" />
     <Compile Include="TcpAppCommand.cs" />
+    <Compile Include="TcpAppDataClass.cs" />
+    <Compile Include="TcpAppEventArgs.cs" />
+    <Compile Include="TcpAppParameter.cs" />
     <Compile Include="TcpAppServer.cs" />
+    <Compile Include="TcpAppServerPlugin.cs" />
     <Compile Include="TcpClient.cs" />
     <Compile Include="TcpClientExtension.cs" />
     <Compile Include="TcpDataReceivedEventArgs.cs" />

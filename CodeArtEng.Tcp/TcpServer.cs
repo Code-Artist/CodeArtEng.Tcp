@@ -79,7 +79,7 @@ namespace CodeArtEng.Tcp
             }
         }
 
-        private List<TcpServerConnection> ActiveConnections = new List<TcpServerConnection>();
+        private readonly List<TcpServerConnection> ActiveConnections = new List<TcpServerConnection>();
         private bool Abort = false;
 
         /// <summary>
@@ -160,8 +160,7 @@ namespace CodeArtEng.Tcp
             listener = new TcpListener(IPAddress.Any, Port);
 
             Abort = false;
-            ConnectionMonitoring = new Thread(MonitorIncomingConnection);
-            ConnectionMonitoring.Name = "Connection Monitoring";
+            ConnectionMonitoring = new Thread(MonitorIncomingConnection) { Name = "Connection Monitoring" };
             ConnectionMonitoring.Start();
             ServerStarted?.Invoke(this, null);
             Trace.WriteLine(Name + ":TCP Server Started at port " + Port);
@@ -226,14 +225,29 @@ namespace CodeArtEng.Tcp
                     {
                         System.Net.Sockets.TcpClient client = listener.AcceptTcpClient();
                         Trace.WriteLine(Name + ": New Connection Detected...");
+
+                        if (MaxClients > 0)
+                        {
+                            //MAX Clients Restriction applied
+                            if (Clients.Count >= MaxClients)
+                            {
+                                //Number of connection exceeds, reject incoming connection.
+                                Trace.WriteLine(Name + ": Connection Rejected, exceed MAX allowed clients!");
+                                byte[] msgBuffer = Encoding.ASCII.GetBytes("Connection Rejected, exceed MAX allowed clients!\r\n");
+                                client.GetStream().Write(msgBuffer, 0, msgBuffer.Length);
+                                client.GetStream().Flush();
+                                client.Close();
+                                continue;
+                            }
+
+                        }
                         TcpServerConnectEventArgs eArgs = new TcpServerConnectEventArgs() { Client = client };
                         ClientConnecting?.Invoke(this, eArgs);
 
                         if (eArgs.Accept)
                         {
                             //Connection Accepted
-                            TcpServerConnection newConnection = new TcpServerConnection(this, client);
-                            newConnection.MessageDelimiter = MessageDelimiter;
+                            TcpServerConnection newConnection = new TcpServerConnection(this, client) { MessageDelimiter = MessageDelimiter };
                             Trace.WriteLine(Name + ": Connection Accepted: Client = " + newConnection.ClientIPAddress);
                             newConnection.ClientDisconnected += OnClientDisconnected;
                             lock (ActiveConnections) { ActiveConnections.Add(newConnection); }
@@ -265,6 +279,13 @@ namespace CodeArtEng.Tcp
             client.Dispose();
             ActiveConnections.Remove(client);
         }
+
+        /// <summary>
+        /// Maximum concurrent clients allowed.
+        /// Unlimited clients allowed if value set to 0 and below.
+        /// Changing the value of this property does not affect existing connections.
+        /// </summary>
+        public int MaxClients { get; set; } = 0;
 
         /// <summary>
         /// Return this list of active clients.
@@ -311,7 +332,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Incoming message in byte array.
         /// </summary>
-        public byte [] ReceivedBytes { get; set; }
+        public byte[] ReceivedBytes { get; set; }
     }
 
     /// <summary>
@@ -319,13 +340,13 @@ namespace CodeArtEng.Tcp
     /// </summary>
     public class TcpServerConnection : IDisposable
     {
-        private System.Net.Sockets.TcpClient Client;
-        private TcpServer Server;
-        private NetworkStream TcpStream;
-        private int BufferSize;
-        private byte[] buffer;
+        private readonly System.Net.Sockets.TcpClient Client;
+        private readonly TcpServer Server;
+        private readonly NetworkStream TcpStream;
+        private readonly int BufferSize;
+        private readonly byte[] buffer;
         private string Message;
-        private List<byte> MessageBuffer;
+        private readonly List<byte> MessageBuffer;
 
         /// <summary>
         /// IP address for connected client.
@@ -347,6 +368,9 @@ namespace CodeArtEng.Tcp
         /// Occurs when one or more bytes is sent from client.
         /// </summary>
         public event EventHandler<TcpServerDataEventArgs> BytesReceived;
+        /// <summary>
+        /// Occurs when reply is sent to client.
+        /// </summary>
         public event EventHandler<TcpServerDataEventArgs> BytesSent;
         /// <summary>
         /// Occurs when a message terminated with <see cref="MessageDelimiter"/> is received.
@@ -434,26 +458,23 @@ namespace CodeArtEng.Tcp
                 {
                     //Debug.WriteLine("Received " + byteRead + " bytes.");
                     BytesReceived?.Invoke(this, new TcpServerDataEventArgs(this, buffer, byteRead));
-                    
+
                     //Build string until delimeter character is detected.
                     EventHandler<MessageReceivedEventArgs> OnMessageReceived = MessageReceived;
-                    if (OnMessageReceived != null)
+                    for (int x = 0; x < byteRead; x++)
                     {
-
-                        for (int x = 0; x < byteRead; x++)
+                        byte b = buffer[x];
+                        if (b != MessageDelimiter)
                         {
-                            byte b = buffer[x];
-                            if (b != MessageDelimiter)
-                            {
-                                MessageBuffer.Add(b);
-                            }
-                            else
-                            {
-                                byte[] messageBytes = MessageBuffer.ToArray();
-                                Message = Encoding.ASCII.GetString(messageBytes);
-                                MessageBuffer.Clear();
-                                OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message , ReceivedBytes = messageBytes});
-                            }
+                            MessageBuffer.Add(b);
+                        }
+                        else
+                        {
+                            byte[] messageBytes = MessageBuffer.ToArray();
+                            Message = Encoding.ASCII.GetString(messageBytes);
+                            MessageBuffer.Clear();
+                            if (OnMessageReceived != null) OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
+                            ProcessReceivedMessageCallback?.Invoke(this, Message, messageBytes);
                         }
                     }
                     BeginRead();
@@ -472,6 +493,18 @@ namespace CodeArtEng.Tcp
                 return;
             }
         }
+
+        /// <summary>
+        /// Message Received callback prototype
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="message"></param>
+        /// <param name="messageBytes"></param>
+        public delegate void ProcessReceivedMessage(TcpServerConnection client, string message, byte[] messageBytes);
+        /// <summary>
+        /// Message Received callback. To be implement by derived class to process received message.
+        /// </summary>
+        public ProcessReceivedMessage ProcessReceivedMessageCallback;
 
         /// <summary>
         /// Write string to client.

@@ -7,9 +7,9 @@ namespace TcpServerExample
 {
     public partial class Form1 : Form
     {
-        TcpServer Server;
+        readonly TcpServer Server;
         TcpServerConnection tcpClient;
-        TcpAppServer AppServer;
+        readonly TcpAppServer AppServer;
 
         private delegate void TCPMethod(object sender, TcpServerEventArgs e);
         private delegate void TCPDataMethod(object sender, TcpServerDataEventArgs e);
@@ -28,7 +28,30 @@ namespace TcpServerExample
             AppServer.WelcomeMessage = "Welcome to TCP Application Server. Copyright (C) Code Art Engineering.";
             AppServer.ClientConnected += AppServer_ClientConnected;
             AppServer.ClientDisconnected += AppServer_ClientDisconnected;
+
+
+            //TCP Application Server Customization Test
+            AppServer.RegisterCommand("CustomFunction", "Dummy Custom Function", customFunctionCallback);
+            AppServer.RegisterCommand("CustomFunction2", "Dummy Custom Function with Parameter", customFunction2Callback,
+                new TcpAppParameter("P1", "Parameter 1"),
+                new TcpAppParameter("P2", "Parameter 2, optional.", "10"));
+
+            CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin SamplePlugin = new CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin();
+            AppServer.RegisterPluginType("SamplePlugin", typeof(CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin));
+
             propertyGrid2.SelectedObject = AppServer;
+        }
+
+        private void customFunction2Callback(TcpAppInputCommand sender)
+        {
+            sender.Status = TcpAppCommandStatus.OK;
+            sender.OutputMessage = "P1 Value = " + sender.Command.Parameter("P1").Value + " P2 Value = " + sender.Command.Parameter("P2").Value;
+        }
+
+        private void customFunctionCallback(TcpAppInputCommand sender)
+        {
+            sender.Status = TcpAppCommandStatus.OK;
+            sender.OutputMessage = "Custom Function Executed!";
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)

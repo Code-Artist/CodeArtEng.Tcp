@@ -51,7 +51,8 @@ build/
 [Oo]bj/
 .hg/
 .vs/
-NUGet Packages/
+NUGet Package/
+packages/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

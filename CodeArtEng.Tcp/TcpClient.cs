@@ -61,6 +61,16 @@ namespace CodeArtEng.Tcp
         public int ReadTimeout { get; set; } = 1000;
 
         /// <summary>
+        /// Forward <see cref="System.Net.Sockets.TcpClient.ReceiveBufferSize"/>
+        /// </summary>
+        public int ReceiveBufferSize { get => Client.ReceiveBufferSize; set => Client.ReceiveBufferSize = value; }
+
+        /// <summary>
+        /// Forward <see cref="System.Net.Sockets.TcpClient.SendBufferSize"/>
+        /// </summary>
+        public int SendBufferSize { get => Client.SendBufferSize; set => Client.SendBufferSize = value; }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public TcpClient() { }

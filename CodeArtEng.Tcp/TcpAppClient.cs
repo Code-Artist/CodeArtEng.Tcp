@@ -7,29 +7,19 @@ using System.Diagnostics;
 
 namespace CodeArtEng.Tcp
 {
-    public class TcpAppEventArgs : EventArgs
-    {
-        public TcpAppEventArgs(string message) { Message = message; }
-        public string Message { get; private set; }
-    }
-
-    public class TcpAppClientException : Exception
-    {
-        public TcpAppCommandResult Result { get; private set; }
-
-        public TcpAppClientException() : base() { }
-
-        public TcpAppClientException(string message) : base(message) { }
-
-        public TcpAppClientException(string message, Exception innerException) : base(message, innerException) { }
-    }
 
     /// <summary>
     /// TCP Application Client
     /// </summary>
     public class TcpAppClient : TcpClient
     {
+        /// <summary>
+        /// Occurs when Command sent to TCP Server
+        /// </summary>
         public event EventHandler<TcpAppEventArgs> CommandSend;
+        /// <summary>
+        /// Occurs when Command received from TCP Server
+        /// </summary>
         public event EventHandler<TcpAppEventArgs> ResponseReceived;
 
         private bool Initialized = false;
@@ -44,7 +34,10 @@ namespace CodeArtEng.Tcp
         public string ServerAppVersion { get; private set; }
 
         private Version TcpAppServerVersion { get; set; }
-        private List<string> Commands { get; set; } = new List<string>();
+        /// <summary>
+        /// List of registered commands read from TcpAppServer
+        /// </summary>
+        public List<string> Commands { get; private set; } = new List<string>();
 
         /// <summary>
         /// Return version of CodeArtEng.Tcp Assembly
@@ -72,16 +65,6 @@ namespace CodeArtEng.Tcp
             if (!Connected) Initialized = false;
         }
 
-        private void OnCommandSend(string command)
-        {
-            CommandSend?.Invoke(this, new TcpAppEventArgs(command));
-        }
-
-        private void OnResponseReceived(string message)
-        {
-            ResponseReceived?.Invoke(this, new TcpAppEventArgs(message));
-        }
-
         /// <summary>
         /// Execute TCP Application Client Command.
         /// </summary>
@@ -94,31 +77,32 @@ namespace CodeArtEng.Tcp
             try
             {
                 SuspendDataReceivedEvent = true;
+                string commandKeyword = command.Split(' ').First();
 
                 //Verify command registered in function list, only active after Connect() sequence completed.
                 if (Initialized)
                 {
-                    if (!Commands.Contains(command, StringComparer.InvariantCultureIgnoreCase))
+                    if (!Commands.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
                     {
-                        throw new TcpAppClientException("Invalid Command: " + command);
+                        throw new TcpAppClientException("Invalid Command: " + commandKeyword);
                     }
                 }
 
-                string tcpCommand = "#TCP# " + command + "\r\n";
-                OnCommandSend(tcpCommand);
+                string tcpCommand = command + TcpAppCommon.Delimiter;
+                CommandSend?.Invoke(this, new TcpAppEventArgs(command));
                 Write(tcpCommand);
 
                 DateTime startTime = DateTime.Now;
                 while ((DateTime.Now - startTime).TotalMilliseconds < timeout)
+                //while(true)
                 {
                     string response = ReadString();
-                    OnResponseReceived(response);
+                    ResponseReceived?.Invoke(this, new TcpAppEventArgs(response));
                     string[] resultParams = response.Split(' ');
-                    if ((resultParams[0] == "#TCP#") &&
-                        (string.Compare(resultParams[1], command, true) == 0))
+                    if ((string.Compare(resultParams[0], commandKeyword, true) == 0))
                     {
-                        result.Status = (TcpAppCommandStatus)Enum.Parse(typeof(TcpAppCommandStatus), resultParams[2]);
-                        if (resultParams.Length > 3) result.ReturnMessage = string.Join(" ", resultParams.Skip(3));
+                        result.Status = (TcpAppCommandStatus)Enum.Parse(typeof(TcpAppCommandStatus), resultParams[1]);
+                        if (resultParams.Length > 2) result.ReturnMessage = string.Join(" ", resultParams.Skip(2)).Trim(); //Remove trailing CRLF
                         return result;
                     }
                     Thread.Sleep(100); //Wait 100ms, retry.
@@ -176,7 +160,7 @@ namespace CodeArtEng.Tcp
                     TcpAppServerVersion.ToString() + ". Some feature might not be available.");
             }
 
-            result = ExecuteTcpAppCommand("GetFunctionList");
+            result = ExecuteTcpAppCommand("FunctionList?");
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
             Commands.AddRange(result.ReturnMessage.Split(' '));
 
