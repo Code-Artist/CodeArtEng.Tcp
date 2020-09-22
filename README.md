@@ -71,7 +71,8 @@ private void WriteDataToServer()
 }
 
 ```
-
+Documentation and explanation regarding TcpAppServer and TcpAppClient is available at<br>
+[TCP Application Protocol – TCP/IP based Inter-process Communication](https://www.codeproject.com/Articles/5205700/TCP-Application-Protocol-TCP-IP-based-Inter-proces)
 
 Code Artist 2017  
 www.codearteng.com
