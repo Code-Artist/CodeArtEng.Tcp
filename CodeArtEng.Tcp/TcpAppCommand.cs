@@ -7,15 +7,14 @@ namespace CodeArtEng.Tcp
     /// <summary>
     /// TCP Application Registered Command
     /// </summary>
-    public class TcpAppCommand
+    public class TcpAppCommand : ICloneable
     {
-        internal TcpAppServerExecuteDelegate ExecuteCallback;
+        internal TcpAppServerExecuteDelegate ExecuteCallback { get; set; }
 
         /// <summary>
         /// Command description
         /// </summary>
         public string Description { get; private set; }
-        private readonly List<TcpAppParameter> Params = new List<TcpAppParameter>();
 
         /// <summary>
         /// Unique keyword
@@ -23,9 +22,17 @@ namespace CodeArtEng.Tcp
         public string Keyword { get; internal set; }
 
         /// <summary>
+        /// Return true if command is <see cref="TcpAppServer"/> built in Command.
+        /// </summary>
+        public bool IsSystemCommand { get; internal set; }
+
+        private readonly List<TcpAppParameter> Params = new List<TcpAppParameter>();
+        /// <summary>
         /// Parameter list.
         /// </summary>
         public IList<TcpAppParameter> Parameters { get { return Params.AsReadOnly(); } }
+
+        private TcpAppCommand() { }
 
         /// <summary>
         /// Constructor
@@ -68,6 +75,28 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Reset the value for each parameter to default value.
         /// </summary>
-        public void ResetParametersValue() { foreach (TcpAppParameter item in Params) item.Value = item.DefaultValue; }
+        public void ResetParametersValue()
+        {
+            foreach (TcpAppParameter item in Params)
+            {
+                item.Value = item.DefaultValue;
+                item.Values?.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Clone current object
+        /// </summary>
+        /// <returns></returns>
+        public object Clone()
+        {
+            TcpAppCommand result = new TcpAppCommand();
+            result.Description = Description;
+            result.Keyword = Keyword;
+            result.ExecuteCallback = ExecuteCallback;
+            result.IsSystemCommand = IsSystemCommand;
+            foreach (TcpAppParameter p in Parameters) result.AddParameter(p);
+            return result;
+        }
     }
 }

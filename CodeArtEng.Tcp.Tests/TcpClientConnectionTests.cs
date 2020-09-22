@@ -102,7 +102,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ClientWriteNotConnectedToServer()
         {
-            Assert.Throws<SocketException>(() =>
+            Assert.Throws<TcpClientException>(() =>
             {
                 using (TcpClient client = new TcpClient("localhost", 11900))
                 {

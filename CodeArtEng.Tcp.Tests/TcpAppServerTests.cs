@@ -11,7 +11,7 @@ namespace CodeArtEng.Tcp.Tests
     [TestFixture]
     public class TcpAppServerTests
     {
-        private TcpAppServer Server = new TcpAppServer(null);
+        private TcpAppServer Server = new TcpAppServer();
         private TcpAppClient Client = new TcpAppClient("localhost", 25000);
 
         [OneTimeSetUp]
@@ -36,15 +36,40 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void RegisterDuplicatedCommand_ArgumentException()
         {
-            TcpAppServer server = new TcpAppServer(null);
+            TcpAppServer server = new TcpAppServer();
             server.RegisterCommand("DummyCommand", "Dummy", null);
             Assert.Throws<ArgumentException>(() => { server.RegisterCommand("dummycommand", "Dummy", null); });
         }
 
         [Test]
+        public void RegisterCommandWithParameterArray()
+        {
+            TcpAppServer server = new TcpAppServer();
+            server.RegisterCommand("DummyCommand", "Dummy", null,
+                TcpAppParameter.CreateParameter("P1", "Param 1"),
+                TcpAppParameter.CreateParameter("P2", "Param 2"),
+                TcpAppParameter.CreateParameterArray("PArr1", "Array Param 1", true)
+                );
+        }
+
+        [Test]
+        public void RegisterCommandWithParameterArray_ArrayNotLastParam_ArgumentException()
+        {
+            TcpAppServer server = new TcpAppServer();
+            Assert.Throws<ArgumentException>(() =>
+            {
+                server.RegisterCommand("DummyCommand", "Dummy", null,
+                    TcpAppParameter.CreateParameter("P1", "Param 1"),
+                    TcpAppParameter.CreateParameterArray("PArr1", "Array Param 1", true),
+                    TcpAppParameter.CreateParameter("P2", "Param 2")
+                    );
+            });
+        }
+
+        [Test]
         public void StartServer()
         {
-            using (TcpAppServer server = new TcpAppServer(null))
+            using (TcpAppServer server = new TcpAppServer())
             {
                 server.Start(25100);
                 Assert.IsTrue(server.IsServerStarted);
@@ -67,7 +92,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppCommandResult result = ExecuteCommand("TcpAppInit");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.AreEqual("Microsoft.TestHost.x86 16.0.1", result.ReturnMessage);
+            Assert.IsTrue(result.ReturnMessage.StartsWith("Microsoft.TestHost.x86"));
         }
 
 
@@ -82,21 +107,9 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void SystemCommand_ProgramVersion()
         {
-            TcpAppCommandResult result = ExecuteCommand("Applicationversion?");
+            TcpAppCommandResult result = ExecuteCommand("ApplicationVersion?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.AreEqual("16.0.1", result.ReturnMessage);
-        }
-
-        [TestCase("MinimizeWindow")]
-        [TestCase("RestoreWindow")]
-        [TestCase("BringToFront")]
-        //[TestCase("SetWindowPosition")] - Missing required argument.
-        public void SystemCommand_GUI_MainForm_NULL(string command)
-        {
-            //ToDo: Assign dummy main form for test?
-            TcpAppCommandResult result = ExecuteCommand(command);
-            Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
-            Assert.AreEqual("Main Form not assigned!", result.ReturnMessage);
+            Assert.AreEqual("16.6.0", result.ReturnMessage);
         }
 
         [Test]

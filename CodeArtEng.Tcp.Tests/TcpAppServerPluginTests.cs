@@ -12,7 +12,7 @@ namespace CodeArtEng.Tcp.Tests
     [TestFixture]
     class TcpAppServerPluginTests
     {
-        private TcpAppServer Server = new TcpAppServer(null);
+        private TcpAppServer Server = new TcpAppServer();
         private TcpAppClient Client = new TcpAppClient("localhost", 25000);
 
         [OneTimeSetUp]
@@ -24,7 +24,9 @@ namespace CodeArtEng.Tcp.Tests
             System.Threading.Thread.Sleep(100);
             Assert.AreEqual(1, Server.Clients.Count);
             Debug.WriteLine("Fixture Setup Completed.");
-            Server.RegisterPluginType("SamplePlugin", typeof(TcpAppServerSamplePlugin));
+            Server.RegisterPluginType(typeof(TcpAppServerSamplePlugin));
+            Server.RegisterPluginType(typeof(TcpAppSimpleString));
+            Server.RegisterPluginType(typeof(TcpAppServerSimpleMath));
         }
 
         [OneTimeTearDown]
@@ -35,13 +37,41 @@ namespace CodeArtEng.Tcp.Tests
             Debug.WriteLine("Fixture Tear Down Completed.");
         }
 
+        [Test]
+        public void MathPluginSum()
+        {
+            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject simplemath M1");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            result = Client.ExecuteCommand("M1 Sum 10 20 30 45");
+            Assert.AreEqual("105", result.ReturnMessage);
+        }
+
+        [Test]
+        public void MathPlugin_CommandTimeout()
+        {
+            TcpAppClient newClient = new TcpAppClient("127.0.0.1", 25000);
+            newClient.Connect();
+            TcpAppCommandResult result = newClient.ExecuteCommand("CreateObject simplemath M2");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            Assert.Throws<TcpAppClientException>(() => { newClient.ExecuteCommand("M2 TimeoutSim"); });
+        }
+
+
+        [Test]
+        public void StringPluginReplace()
+        {
+            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject simplestring S1");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            result = Client.ExecuteCommand("Execute S1 Replace \"Hell Of World\"  \"l Of \"  \"lo \"");
+            Assert.AreEqual("Hello World", result.ReturnMessage);
+        }
 
         [Test]
         public void RegisterPluginDuplicate_Exception()
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Server.RegisterPluginType("SamplePlugin", typeof(TcpAppServerSamplePlugin));
+                Server.RegisterPluginType(typeof(TcpAppServerSamplePlugin));
             });
         }
 
@@ -125,9 +155,13 @@ namespace CodeArtEng.Tcp.Tests
             Assert.AreEqual("Command 1 Executed!", result.ReturnMessage);
         }
 
+        [Test]
         public void ExecutePluginCommand_CommandNotExist()
         {
-
+            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin X3");
+            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            result = Client.ExecuteCommand("Execute X2 UnknownCommand");
+            Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
         }
 
         [Test]

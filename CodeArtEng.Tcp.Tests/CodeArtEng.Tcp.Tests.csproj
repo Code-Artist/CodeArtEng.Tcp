@@ -48,9 +48,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TcpAppClientTests.cs" />
+    <Compile Include="TcpAppCommandTests.cs" />
     <Compile Include="TcpAppServerPluginTests.cs" />
     <Compile Include="TcpAppServerSamplePlugin.cs" />
+    <Compile Include="TcpAppServerSimpleMath.cs" />
     <Compile Include="TcpAppServerTests.cs" />
+    <Compile Include="TcpAppSimpleString.cs" />
     <Compile Include="TcpClientConnectionTests.cs" />
     <Compile Include="TcpClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -57,11 +57,11 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public bool IsServerStarted { get { return ConnectionMonitoring != null; } }
 
-        private byte messageDelimiter;
+        private byte messageDelimiter = Convert.ToByte('\r');
         /// <summary>
         /// Delimiter character to split incoming message to mulitple string package.
         /// Each complete string which terminated with message delimiter will trigger 
-        /// the <see cref="TcpServerConnection.MessageReceived"/> once.
+        /// the <see cref="TcpServerConnection.MessageReceived"/> once. Default value is '\r' (0x0D)
         /// </summary>
         /// <remarks>
         /// Recommended to set this property before server start.
@@ -223,6 +223,7 @@ namespace CodeArtEng.Tcp
                     }
                     else
                     {
+
                         System.Net.Sockets.TcpClient client = listener.AcceptTcpClient();
                         Trace.WriteLine(Name + ": New Connection Detected...");
 
@@ -239,15 +240,15 @@ namespace CodeArtEng.Tcp
                                 client.Close();
                                 continue;
                             }
-
                         }
+
                         TcpServerConnectEventArgs eArgs = new TcpServerConnectEventArgs() { Client = client };
                         ClientConnecting?.Invoke(this, eArgs);
 
                         if (eArgs.Accept)
                         {
                             //Connection Accepted
-                            TcpServerConnection newConnection = new TcpServerConnection(this, client) { MessageDelimiter = MessageDelimiter };
+                            TcpServerConnection newConnection = new TcpServerConnection(client) { MessageDelimiter = MessageDelimiter };
                             Trace.WriteLine(Name + ": Connection Accepted: Client = " + newConnection.ClientIPAddress);
                             newConnection.ClientDisconnected += OnClientDisconnected;
                             lock (ActiveConnections) { ActiveConnections.Add(newConnection); }
@@ -341,8 +342,7 @@ namespace CodeArtEng.Tcp
     public class TcpServerConnection : IDisposable
     {
         private readonly System.Net.Sockets.TcpClient Client;
-        private readonly TcpServer Server;
-        private readonly NetworkStream TcpStream;
+        private NetworkStream TcpStream;
         private readonly int BufferSize;
         private readonly byte[] buffer;
         private string Message;
@@ -382,9 +382,8 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public bool Connected { get; private set; } = true;
 
-        internal TcpServerConnection(TcpServer parent, System.Net.Sockets.TcpClient client)
+        internal TcpServerConnection(System.Net.Sockets.TcpClient client)
         {
-            Server = parent;
             Client = client;
             BufferSize = Client.ReceiveBufferSize;
             TcpStream = Client.GetStream();
@@ -434,7 +433,11 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public void Close()
         {
-            TcpStream.Close();
+            if (TcpStream != null)
+            {
+                TcpStream.Close();
+                TcpStream = null;
+            }
             Connected = false;
         }
 
@@ -447,6 +450,12 @@ namespace CodeArtEng.Tcp
         {
             try
             {
+                if(TcpStream == null)
+                {
+                    ClientDisconnected?.Invoke(this, null);
+                    return;
+                }
+
                 int byteRead = TcpStream.EndRead(result);
                 if (byteRead == 0)
                 {
@@ -473,7 +482,7 @@ namespace CodeArtEng.Tcp
                             byte[] messageBytes = MessageBuffer.ToArray();
                             Message = Encoding.ASCII.GetString(messageBytes);
                             MessageBuffer.Clear();
-                            if (OnMessageReceived != null) OnMessageReceived(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
+                            OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
                             ProcessReceivedMessageCallback?.Invoke(this, Message, messageBytes);
                         }
                     }

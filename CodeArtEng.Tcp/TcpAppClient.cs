@@ -79,14 +79,15 @@ namespace CodeArtEng.Tcp
                 SuspendDataReceivedEvent = true;
                 string commandKeyword = command.Split(' ').First();
 
+                //ToDo: TcpAppClient - Disable local command verification?
                 //Verify command registered in function list, only active after Connect() sequence completed.
-                if (Initialized)
-                {
-                    if (!Commands.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
-                    {
-                        throw new TcpAppClientException("Invalid Command: " + commandKeyword);
-                    }
-                }
+                //if (Initialized)
+                //{
+                //    if (!Commands.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
+                //    {
+                //        throw new TcpAppClientException("Invalid Command: " + commandKeyword);
+                //    }
+                //}
 
                 string tcpCommand = command + TcpAppCommon.Delimiter;
                 CommandSend?.Invoke(this, new TcpAppEventArgs(command));
@@ -98,15 +99,18 @@ namespace CodeArtEng.Tcp
                 {
                     string response = ReadString();
                     ResponseReceived?.Invoke(this, new TcpAppEventArgs(response));
-                    string[] resultParams = response.Split(' ');
-                    if ((string.Compare(resultParams[0], commandKeyword, true) == 0))
+                    if (!string.IsNullOrEmpty(response))
                     {
-                        result.Status = (TcpAppCommandStatus)Enum.Parse(typeof(TcpAppCommandStatus), resultParams[1]);
-                        if (resultParams.Length > 2) result.ReturnMessage = string.Join(" ", resultParams.Skip(2)).Trim(); //Remove trailing CRLF
+                        string[] resultParams = response.Split('\r');
+
+                        //ToDo: Handle Busy Status?
+                        result.Status = (TcpAppCommandStatus)Enum.Parse(typeof(TcpAppCommandStatus), resultParams[0]);
+                        if (resultParams.Length > 1) result.ReturnMessage = string.Join(TcpAppCommon.NewLine, resultParams.Skip(1)).Trim(); //Remove trailing CRLF
                         return result;
                     }
                     Thread.Sleep(100); //Wait 100ms, retry.
                 }//while
+                throw new TcpAppClientException("TIMEOUT: No response received from server!");
             }
             catch (TcpAppClientException) { throw; }
             catch (Exception ex)
@@ -117,14 +121,13 @@ namespace CodeArtEng.Tcp
             {
                 SuspendDataReceivedEvent = false;
             }
-            throw new TcpAppClientException("TIMEOUT: No response received from server!");
         }
 
         /// <summary>
         /// Execute TCP Application Client Command.
         /// </summary>
         /// <param name="command"></param>
-        /// <param name="timeout"></param>
+        /// <param name="timeout">Command timeout in ms</param>
         /// <returns></returns>
         public TcpAppCommandResult ExecuteCommand(string command, int timeout = 1000)
         {
@@ -139,17 +142,14 @@ namespace CodeArtEng.Tcp
         public override void Connect()
         {
             Initialized = false;
-            if (!Connected)
-            {
-                base.Connect();
-                Thread.Sleep(50);
-            }
+            base.Connect();
+            Thread.Sleep(50);
             TcpAppCommandResult result = ExecuteTcpAppCommand("TcpAppInit", 3000);
             string[] param = result.ReturnMessage.Trim().Split(' ');
             ServerAppName = param[0];
             ServerAppVersion = param[1];
 
-            result = ExecuteTcpAppCommand("TcpAppVersion?");
+            result = ExecuteTcpAppCommand("Version?");
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
             TcpAppServerVersion = new Version(result.ReturnMessage);
 
@@ -164,7 +164,7 @@ namespace CodeArtEng.Tcp
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
             Commands.AddRange(result.ReturnMessage.Split(' '));
 
-            Trace.WriteLine("TcpApp Initialized");
+            Trace.WriteLine("TCP Application Connection Ready.");
             Initialized = true;
         }
 

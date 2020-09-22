@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CodeArtEng.Tcp
 {
@@ -35,29 +36,58 @@ namespace CodeArtEng.Tcp
         public string Value { get; set; } = string.Empty;
 
         /// <summary>
-        /// Constructor - Optional Parameter
+        /// Values for Array type parameter
+        /// </summary>
+        public List<string> Values { get; private set; }
+
+        /// <summary>
+        /// Defined if Parameter is an array
+        /// </summary>
+        public bool IsArray { get; private set; } = false;
+
+        private TcpAppParameter() { }
+
+        /// <summary>
+        /// Factory - Create Optional Parameter
         /// </summary>
         /// <param name="name"></param>
         /// <param name="description"></param>
         /// <param name="defaultValue"></param>
-        public TcpAppParameter(string name, string description, string defaultValue)
+        /// <returns></returns>
+        public static TcpAppParameter CreateOptionalParameter(string name, string description, string defaultValue)
         {
-            Name = name;
-            DefaultValue = defaultValue?.ToString();
-            IsOptional = true;
-            Description = description;
+            return new TcpAppParameter() { Name = name, Description = description, DefaultValue = defaultValue?.ToString(), IsOptional = true };
         }
 
         /// <summary>
-        /// Constructor - Mandatory Parameter
+        /// Factory - Create Mandatory Parameter
         /// </summary>
         /// <param name="name"></param>
         /// <param name="description"></param>
-        public TcpAppParameter(string name, string description)
+        /// <returns></returns>
+        public static TcpAppParameter CreateParameter(string name, string description)
         {
-            Name = name;
-            Description = description;
-            IsOptional = false;
+            return new TcpAppParameter() { Name = name, Description = description };
+        }
+
+        /// <summary>
+        /// Factory - Create Parameter array which take 1 or more arguments.
+        /// Parameter array can only be declared as last paramter in a command.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="description"></param>
+        /// <param name="optional"></param>
+        /// <returns></returns>
+        public static TcpAppParameter CreateParameterArray(string name, string description, bool optional)
+        {
+            return new TcpAppParameter()
+            {
+                Name = name,
+                Description = description,
+                IsArray = true,
+                IsOptional = optional,
+                Values = new List<string>()
+            };
         }
     }
 }

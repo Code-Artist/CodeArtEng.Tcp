@@ -11,7 +11,7 @@ namespace CodeArtEng.Tcp.Tests
     public class TcpClientTests
     {
         private void TcpDelay() { Thread.Sleep(10); }
-        private TcpServer Server = new TcpServer();
+        private readonly TcpServer Server = new TcpServer();
         private TcpClient Client;
 
         [OneTimeSetUp]

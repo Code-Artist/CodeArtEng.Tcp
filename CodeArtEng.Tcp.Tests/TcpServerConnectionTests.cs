@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace CodeArtEng.Tcp.Tests
@@ -121,6 +122,28 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         [Test]
+        public void ClientReconnect()
+        {
+            using(TcpServer server = new TcpServer())
+            {
+                int Port = 10010;
+                server.Start(Port);
+                TcpClient client = new TcpClient("127.0.0.1", Port);
+                client.Connect();
+                Assert.IsTrue(client.Connected);
+
+                //Simulate Connection Broken.
+                server.Stop();
+                Assert.IsFalse(client.Connected, "Server stopped, expected client disconnected");
+                server.Start(Port);
+
+                client.WriteLine("Test");
+                Assert.IsTrue(client.Connected);
+
+            }
+        }
+
+        [Test]
         public void ServerTerminateClientConnection()
         {
             int ClientCount = 10;
@@ -176,6 +199,32 @@ namespace CodeArtEng.Tcp.Tests
                 Assert.AreEqual(ClientCount, server.Clients.Count);
                 Trace.WriteLine("Test Ended.");
                 Clients.Clear();
+            }
+        }
+
+        [Test]
+        public void MultipleClientsConnectToServer_RejectAfterMaxAchieved()
+        {
+            int ClientCount = 5;
+            using (TcpServer server = new TcpServer())
+            {
+                //Prevent TcpClient dispose by GC
+                List<TcpClient> Clients = new List<TcpClient>();
+                server.MaxClients = ClientCount;
+                server.Start(10020);
+                TcpDelay();
+                for (int x = 0; x < ClientCount; x++)
+                {
+                    TcpClient client = new TcpClient("127.0.0.1", 10020);
+                    Clients.Add(client);
+                    client.Connect();
+                }
+                Thread.Sleep(1000);
+                TcpDelay();
+                Assert.AreEqual(ClientCount, server.Clients.Count);
+
+                TcpClient extraClient = new TcpClient("127.0.0.1", 10020);
+                Assert.Throws<TcpClientException>(() => { extraClient.Connect(); });
             }
         }
     }

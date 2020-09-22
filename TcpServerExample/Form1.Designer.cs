@@ -243,6 +243,7 @@
             // tcpServerLog
             // 
             this.tcpServerLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tcpServerLog.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tcpServerLog.Location = new System.Drawing.Point(0, 93);
             this.tcpServerLog.Name = "tcpServerLog";
             this.tcpServerLog.ReadOnly = true;
@@ -341,6 +342,7 @@
             // tcpAppServerLog
             // 
             this.tcpAppServerLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tcpAppServerLog.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tcpAppServerLog.Location = new System.Drawing.Point(0, 93);
             this.tcpAppServerLog.Name = "tcpAppServerLog";
             this.tcpAppServerLog.ReadOnly = true;
@@ -365,6 +367,7 @@
             this.Name = "Form1";
             this.Text = "TCP Server";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+            this.Shown += new System.EventHandler(this.Form1_Shown);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.tabControl1.ResumeLayout(false);

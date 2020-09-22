@@ -18,14 +18,18 @@ namespace TcpServerExample
         {
             InitializeComponent();
             Server = new TcpServer();
+            Server.MaxClients = 5;
             Server.ServerStarted += Server_StateChanged;
             Server.ServerStopped += Server_StateChanged;
             Server.ClientConnected += Server_ClientConnected;
             Server.ClientDisconnected += Server_ClientDisconnected;
             propertyGrid1.SelectedObject = Server;
 
-            AppServer = new TcpAppServer(this);
-            AppServer.WelcomeMessage = "Welcome to TCP Application Server. Copyright (C) Code Art Engineering.";
+            AppServer = new TcpAppServer()
+            {
+                WelcomeMessage = "Welcome to TCP Application Server. Copyright (C) Code Art Engineering."
+            };
+            AppServer.MaxClients = 5;
             AppServer.ClientConnected += AppServer_ClientConnected;
             AppServer.ClientDisconnected += AppServer_ClientDisconnected;
 
@@ -33,13 +37,21 @@ namespace TcpServerExample
             //TCP Application Server Customization Test
             AppServer.RegisterCommand("CustomFunction", "Dummy Custom Function", customFunctionCallback);
             AppServer.RegisterCommand("CustomFunction2", "Dummy Custom Function with Parameter", customFunction2Callback,
-                new TcpAppParameter("P1", "Parameter 1"),
-                new TcpAppParameter("P2", "Parameter 2, optional.", "10"));
+                TcpAppParameter.CreateParameter("P1", "Parameter 1"),
+                TcpAppParameter.CreateOptionalParameter("P2", "Parameter 2, optional.", "10"));
+            AppServer.RegisterCommand("SlowCommand", "Command which take 10 seconds to complete. Simulate blocking!", SlowCommand);
 
             CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin SamplePlugin = new CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin();
-            AppServer.RegisterPluginType("SamplePlugin", typeof(CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin));
+            AppServer.RegisterPluginType(typeof(CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin));
 
             propertyGrid2.SelectedObject = AppServer;
+        }
+
+        private void SlowCommand(TcpAppInputCommand sender)
+        {
+            System.Threading.Thread.Sleep(4500);
+            sender.OutputMessage = "Snail command completed";
+            sender.Status = TcpAppCommandStatus.OK;
         }
 
         private void customFunction2Callback(TcpAppInputCommand sender)
@@ -73,7 +85,7 @@ namespace TcpServerExample
         private void LogRX(RichTextBox target, string message)
         {
             target.SelectionColor = System.Drawing.Color.DarkGreen;
-            target.AppendText("[RX] " + message);
+            target.AppendText(message + "\n");
             target.SelectionStart = target.TextLength;
             target.ScrollToCaret();
         }
@@ -81,7 +93,7 @@ namespace TcpServerExample
         private void LogRX(RichTextBox target, byte[] data)
         {
             target.SelectionColor = System.Drawing.Color.DarkGreen;
-            target.AppendText("[RX] " + Encoding.ASCII.GetString(data));
+            target.AppendText(Encoding.ASCII.GetString(data) + "\n");
             target.SelectionStart = target.TextLength;
             target.ScrollToCaret();
         }
@@ -89,7 +101,7 @@ namespace TcpServerExample
         private void LogTX(RichTextBox target, byte[] data)
         {
             target.SelectionColor = System.Drawing.Color.Blue;
-            target.AppendText("[TX] " + Encoding.ASCII.GetString(data));
+            target.AppendText(Encoding.ASCII.GetString(data) + "\n");
             target.SelectionStart = target.TextLength;
             target.ScrollToCaret();
         }
@@ -233,6 +245,10 @@ namespace TcpServerExample
             LogInfo(tcpAppServerLog, "Client Disconnected: " + e.Client.ClientIPAddress);
         }
 
-
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            AppServer.Start(Convert.ToInt32(txtAppServerPort.Text));
+            propertyGrid2.Refresh();
+        }
     }
 }

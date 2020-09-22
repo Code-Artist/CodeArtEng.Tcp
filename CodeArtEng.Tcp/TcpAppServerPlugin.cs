@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 namespace CodeArtEng.Tcp
 {
     /// <summary>
-    /// TCP Application Server Plugin Helper Class
+    /// TCP Application Server Plugin Helper Class.
+    /// Implement in class which implement <see cref="ITcpAppServerPlugin"/>
     /// </summary>
     public class TcpAppServerPlugin
     {
@@ -18,7 +19,7 @@ namespace CodeArtEng.Tcp
         /// </summary>
         /// <param name="command"></param>
         /// <returns></returns>
-        public TcpAppCommand GetCommand(string command)
+        private TcpAppCommand GetCommand(string command)
         {
             return Commands.FirstOrDefault(x => x.Keyword.Equals(command, StringComparison.InvariantCultureIgnoreCase));
         }
@@ -56,47 +57,12 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Execute Plugin Callback. Call by ITcpAppServerPlugin
         /// </summary>
-        /// <param name="sender"></param>
-        public void ExecutePluginCommand(TcpAppInputCommand sender)
+        /// <param name="commandArguments">Command keyword and arguments in string array.</param>
+        public TcpAppInputCommand ExecutePluginCommand(string [] commandArguments)
         {
-            sender.Status = TcpAppCommandStatus.ERR;
-            string[] cmdArg = sender.Arguments.Skip(1).ToArray();
-
-            //Process Command Keyword
-            TcpAppCommand cmdHandler = GetCommand(cmdArg[0]);
-            if (cmdHandler == null)
-            {
-                //Error - Unrecognized command.
-                sender.OutputMessage = string.Format("Invalid Command: {0}!", cmdArg[0]);
-                return;
-            }
-            sender.Command = cmdHandler;
-
-            //Process Parameters
-            cmdHandler.ResetParametersValue();
-            int argID = 1; //First Parameter
-            foreach (TcpAppParameter item in cmdHandler.Parameters)
-            {
-                if (argID >= cmdArg.Length)
-                {
-                    //Argument with no input
-                    if (!item.IsOptional)
-                    {
-                        //Error - Missing required parameter
-                        sender.OutputMessage = "Missing required parameter: " + item.Name + "!";
-                        return;
-                    }
-                }
-                else
-                {
-                    item.Value = cmdArg[argID]; //Assign parameter value
-                }
-                argID++;
-            }
-
-            //Execute Command.
-            //Note: Error handling not required. Will handle by TcpAppServer class.
-            sender.Command.ExecuteCallback(sender);
+            TcpAppInputCommand command = TcpAppCommon.CreateInputCommand(Commands, commandArguments);
+            command.ExecuteCallback();
+            return command;
         }
     }
 }

@@ -27,7 +27,7 @@ namespace TcpClientExample
         private void AppClient_ResponseReceived(object sender, TcpAppEventArgs e)
         {
             tcpAppLog.SelectionColor = System.Drawing.Color.DarkGreen;
-            tcpAppLog.AppendText("[RX] " + e.Message);
+            tcpAppLog.AppendText(e.Message);
             tcpAppLog.SelectionStart = tcpAppLog.TextLength;
             tcpAppLog.ScrollToCaret();
         }
@@ -35,7 +35,7 @@ namespace TcpClientExample
         private void AppClient_CommandSend(object sender, TcpAppEventArgs e)
         {
             tcpAppLog.SelectionColor = System.Drawing.Color.Blue;
-            tcpAppLog.AppendText("[TX] " + e.Message);
+            tcpAppLog.AppendText(e.Message +"\n");
             tcpAppLog.SelectionStart = tcpAppLog.TextLength;
             tcpAppLog.ScrollToCaret();
         }
@@ -103,8 +103,13 @@ namespace TcpClientExample
 
         private void btWrite_Click(object sender, EventArgs e)
         {
+            WriteToServer();
+        }
+
+        private void WriteToServer()
+        {
             LogTX(tcpClientLog, txtInput.Text);
-            Client.Write(txtInput.Text);
+            Client.WriteLine(txtInput.Text);
         }
 
         #endregion
@@ -150,6 +155,14 @@ namespace TcpClientExample
                 if (result.Status == TcpAppCommandStatus.ERR) throw new Exception("ERROR: Execution FAILED! " + result.ReturnMessage);
             }
             catch (Exception ex) { HandleException(ex); }
+        }
+
+        private void txtInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.KeyCode == Keys.Return)
+            {
+                WriteToServer();
+            }
         }
     }
 }

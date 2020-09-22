@@ -188,25 +188,5 @@ namespace CodeArtEng.Tcp.Tests
             finally { server.Dispose(); }
         }
 
-        [Test]
-        public void TcpServerMultipleClientsMaxClients()
-        {
-            TcpServer server = new TcpServer();
-            try
-            {
-                server.MaxClients = 2;
-                server.Start(12350);
-                TcpDelay();
-
-                for(int x=0; x < 3; x++)
-                {
-                    TcpClient client = new TcpClient("127.0.0.1", 12350);
-                    client.Connect();
-                    TcpDelay();
-                }
-                Assert.AreEqual(2, server.Clients.Count);
-            }
-            finally { server.Dispose(); }
-        }
     }
 }

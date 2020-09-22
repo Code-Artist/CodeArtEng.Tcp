@@ -41,7 +41,7 @@ namespace TcpAppClientTerminal
 
         private void Client_ResponseReceived(object sender, TcpAppEventArgs e)
         {
-            if (e.Message.Contains(" ERR "))
+            if (e.Message.StartsWith("ERR"))
                 AppendOutput(e.Message, Color.Red);
             else
                 AppendOutput(e.Message, Color.Lime);
@@ -59,16 +59,26 @@ namespace TcpAppClientTerminal
         {
             if (Client.Connected)
             {
-                TxtHostName.Enabled = TxtPort.Enabled = false;
-                PnSendCommand.Enabled = true;
-                BtConnect.Text = "Disconnect";
+                this.BeginInvoke(new MethodInvoker(ClientConnected));
             }
             else
             {
-                TxtHostName.Enabled = TxtPort.Enabled = true;
-                PnSendCommand.Enabled = false;
-                BtConnect.Text = "Connect";
+                this.BeginInvoke(new MethodInvoker(ClientDisconnected));
             }
+        }
+
+        private void ClientConnected()
+        {
+            TxtHostName.Enabled = TxtPort.Enabled = false;
+            PnSendCommand.Enabled = true;
+            BtConnect.Text = "Disconnect";
+        }
+
+        private void ClientDisconnected()
+        {
+            TxtHostName.Enabled = TxtPort.Enabled = true;
+            PnSendCommand.Enabled = false;
+            BtConnect.Text = "Connect";
         }
 
         private void BtConnect_Click(object sender, EventArgs e)
@@ -102,7 +112,7 @@ namespace TcpAppClientTerminal
                     if (!CommandBox.Items.Contains(CommandBox.Text)) CommandBox.Items.Add(CommandBox.Text);
                     command += " " + CommandBox.Text;
                 }
-                Client.ExecuteCommand(command.Trim());
+                Client.ExecuteCommand(command.Trim(), 5000);
             }
             catch (Exception ex)
             {

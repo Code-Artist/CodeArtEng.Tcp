@@ -3,17 +3,19 @@ using System.Collections.Generic;
 
 namespace CodeArtEng.Tcp.Tests
 {
-    public class TcpAppServerSamplePlugin : ITcpAppServerPlugin
+    public class TcpAppServerSamplePlugin : ITcpAppServerPlugin, IDisposable
     {
         private readonly TcpAppServerPlugin TcpAppPlugin;
+        private bool disposedValue;
 
-        public string Name { get; set; }
+        public string PluginName { get; private set; } = "SamplePlugin";
+        public string PluginDescription { get; private set; } = "Example Plugin Implementation";
 
-        public string Alias { get => Name; set => Name = value; }
+        public string Alias { get; set; }
 
-        public void ExecutePluginCommand(TcpAppInputCommand sender)
+        public TcpAppInputCommand ExecutePluginCommand(string[] commandArguments)
         {
-            TcpAppPlugin.ExecutePluginCommand(sender);
+            return TcpAppPlugin.ExecutePluginCommand(commandArguments);
         }
 
         public TcpAppServerSamplePlugin()
@@ -24,15 +26,50 @@ namespace CodeArtEng.Tcp.Tests
                     sender.Status = TcpAppCommandStatus.OK;
                     sender.OutputMessage = "Command 1 Executed!";
                 });
-
         }
 
-        public bool DisposeRequest() { return true; }
+        public bool DisposeRequest()
+        {
+            Dispose(); //Execute Dispose method in IDisposable
+            return true;
+        }
 
         public void ShowHelp(TcpAppInputCommand sender)
         {
             TcpAppPlugin.ShowHelp(sender);
         }
 
+        #region [ Dispose Pattern ]
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // dispose managed state (managed objects)
+                }
+
+                // free unmanaged resources (unmanaged objects) and override finalizer
+                // set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        // //  override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~TcpAppServerSamplePlugin()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
     }
 }

@@ -47,9 +47,14 @@
   <ItemGroup>
     <Compile Include="ITcpAppServerPlugin.cs" />
     <Compile Include="TcpAppClient.cs" />
+    <Compile Include="TcpAppCommandResult.cs" />
+    <Compile Include="TcpAppCommon.cs" />
+    <Compile Include="TcpAppInputCommand.cs" />
+    <Compile Include="TcpAppServerPluginType.cs" />
+    <Compile Include="TcpClientException.cs" />
     <Compile Include="TcpAppClientException.cs" />
     <Compile Include="TcpAppCommand.cs" />
-    <Compile Include="TcpAppDataClass.cs" />
+    <Compile Include="TcpAppCommandStatus.cs" />
     <Compile Include="TcpAppEventArgs.cs" />
     <Compile Include="TcpAppParameter.cs" />
     <Compile Include="TcpAppServer.cs" />

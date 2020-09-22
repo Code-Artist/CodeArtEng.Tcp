@@ -108,28 +108,47 @@ namespace CodeArtEng.Tcp
             }
         }
 
+        private bool ConnectionAccepted { get; set; }
+
         /// <summary>
         /// Attempt to establish connection with server.
+        /// First connection attempt to server must be done via this method.
         /// </summary>
         public virtual void Connect()
         {
-            Disconnect();
+            ConnectToServer();
+            ConnectionAccepted = true;
+        }
+
+        private void ConnectToServer()
+        {
+            DisconnectFromServer();
             Client.Connect(HostName, Port);
-            TcpStream = Client.GetStream();
-            Connected = true;
-            BufferSize = Client.ReceiveBufferSize;
-            FixedBuffer = new byte[BufferSize];
+            Thread.Sleep(100);
+            if (Client.IsConnected())
+            {
+                TcpStream = Client.GetStream();
+                Connected = true;
+                BufferSize = Client.ReceiveBufferSize;
+                FixedBuffer = new byte[BufferSize];
 
-            MonitoringThreadActive = true;
-            IncomingDataMonitoring = new Thread(MonitorIncomingData);
-            IncomingDataMonitoring.Name = "TCP Client Data Monitoring @ " + Port.ToString();
-            IncomingDataMonitoring.Start();
+                MonitoringThreadActive = true;
+                IncomingDataMonitoring = new Thread(MonitorIncomingData);
+                IncomingDataMonitoring.Name = "TCP Client Data Monitoring @ " + Port.ToString();
+                IncomingDataMonitoring.Start();
 
-            ConnectionMonitoring = new Thread(MonitorConnection);
-            ConnectionMonitoring.Name = "TCP Client Connection Monitoring @ " + Port.ToString();
-            ConnectionMonitoring.Start();
+                ConnectionMonitoring = new Thread(MonitorConnection);
+                ConnectionMonitoring.Name = "TCP Client Connection Monitoring @ " + Port.ToString();
+                ConnectionMonitoring.Start();
+                ConnectionStatusChanged?.Invoke(this, null);
+            }
+            else throw new TcpClientException("Connection rejected by server!");
+        }
 
-            ConnectionStatusChanged?.Invoke(this, null);
+        private void Reconnect()
+        {
+            if (!ConnectionAccepted) throw new TcpClientException("Connection to server not established!");
+            ConnectToServer();
         }
 
         /// <summary>
@@ -137,11 +156,19 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public virtual void Disconnect()
         {
+            //Reseet Connection Accepted flag to prevent reconnect.
+            ConnectionAccepted = false;
+            DisconnectFromServer();
+        }
+
+        private void DisconnectFromServer()
+        {
             //Gentle close, terminating thread properly
             TerminateThreadsAndTCPStream();
-
             Connected = false;
             Client.Close();
+
+            //Reconstruct Client
             Client = new System.Net.Sockets.TcpClient();
         }
 
@@ -156,13 +183,22 @@ namespace CodeArtEng.Tcp
         }
 
         /// <summary>
+        /// Write string to server terminated with LF
+        /// </summary>
+        /// <param name="message"></param>
+        public void WriteLine(string message)
+        {
+            Write(message + "\r");
+        }
+
+        /// <summary>
         /// Write string to server.
         /// </summary>
         /// <param name="message"></param>
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public void Write(string message)
         {
-            if (!Connected) Connect();
+            if (!Connected) Reconnect();
             byte[] outputBuffer = Encoding.ASCII.GetBytes(message);
             Write(outputBuffer);
         }
@@ -174,7 +210,7 @@ namespace CodeArtEng.Tcp
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public void Write(byte[] dataBytes)
         {
-            if (!Connected) Connect();
+            if (!Connected) Reconnect();
 
             TcpStream.Write(dataBytes, 0, dataBytes.Length);
             TcpStream.Flush();
@@ -197,7 +233,7 @@ namespace CodeArtEng.Tcp
         {
             lock (LockHandler)
             {
-                if (!Connected) Connect();
+                if (!Connected) Reconnect();
 
                 DateTime tStart = DateTime.Now;
                 return ReadRawBytes();
@@ -210,10 +246,9 @@ namespace CodeArtEng.Tcp
             List<byte> ByteBuffer = new List<byte>();
             while (true)
             {
-                int readByte = 0;
                 try
                 {
-                    readByte = TcpStream.Read(FixedBuffer, 0, BufferSize);
+                    int readByte = TcpStream.Read(FixedBuffer, 0, BufferSize);
                     if (readByte == 0) break;
                     else if (readByte == BufferSize)
                     {
@@ -244,7 +279,7 @@ namespace CodeArtEng.Tcp
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public string ReadString()
         {
-            if (!Connected) Connect();
+            if (!Connected) Reconnect();
             return ASCIIEncoding.ASCII.GetString(ReadBytes());
         }
 
