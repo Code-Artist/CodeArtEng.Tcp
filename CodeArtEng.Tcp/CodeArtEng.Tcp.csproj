@@ -50,6 +50,7 @@
     <Compile Include="TcpAppCommandResult.cs" />
     <Compile Include="TcpAppCommon.cs" />
     <Compile Include="TcpAppInputCommand.cs" />
+    <Compile Include="TcpAppServerConnection.cs" />
     <Compile Include="TcpAppServerPluginType.cs" />
     <Compile Include="TcpClientException.cs" />
     <Compile Include="TcpAppClientException.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="TcpDataReceivedEventArgs.cs" />
     <Compile Include="TcpServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TcpServerConnection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

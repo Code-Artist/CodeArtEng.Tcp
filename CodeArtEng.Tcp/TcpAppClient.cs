@@ -25,6 +25,12 @@ namespace CodeArtEng.Tcp
         private bool Initialized = false;
 
         /// <summary>
+        /// Name of current instance.
+        /// </summary>
+        public string Name { get; set; }
+
+
+        /// <summary>
         /// Return Server Application Name
         /// </summary>
         public string ServerAppName { get; private set; }
@@ -47,13 +53,15 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Constructor
         /// </summary>
-        public TcpAppClient() : base() { InitInstance(); }
+        /// <param name="name"></param>
+        public TcpAppClient(string name = null) : base() { InitInstance(); Name = name; }
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="hostName"></param>
         /// <param name="port"></param>
-        public TcpAppClient(string hostName, int port) : base(hostName, port) { InitInstance(); }
+        /// <param name="name"></param>
+        public TcpAppClient(string hostName, int port, string name = null) : base(hostName, port) { InitInstance(); Name = name; }
 
         private void InitInstance()
         {
@@ -101,11 +109,11 @@ namespace CodeArtEng.Tcp
                     ResponseReceived?.Invoke(this, new TcpAppEventArgs(response));
                     if (!string.IsNullOrEmpty(response))
                     {
-                        string[] resultParams = response.Split('\r');
+                        string[] resultParams = response.Split(' ');
 
                         //ToDo: Handle Busy Status?
                         result.Status = (TcpAppCommandStatus)Enum.Parse(typeof(TcpAppCommandStatus), resultParams[0]);
-                        if (resultParams.Length > 1) result.ReturnMessage = string.Join(TcpAppCommon.NewLine, resultParams.Skip(1)).Trim(); //Remove trailing CRLF
+                        if (resultParams.Length > 1) result.ReturnMessage = string.Join(" ", resultParams.Skip(1)).Trim(); //Remove trailing CRLF
                         return result;
                     }
                     Thread.Sleep(100); //Wait 100ms, retry.
@@ -148,6 +156,10 @@ namespace CodeArtEng.Tcp
             string[] param = result.ReturnMessage.Trim().Split(' ');
             ServerAppName = param[0];
             ServerAppVersion = param[1];
+
+            result = ExecuteTcpAppCommand("Name?");
+            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
+            Name = result.ReturnMessage;
 
             result = ExecuteTcpAppCommand("Version?");
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);

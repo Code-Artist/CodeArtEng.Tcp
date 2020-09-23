@@ -13,6 +13,10 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public TcpAppCommand Command { get; set; }
         /// <summary>
+        /// Handle to Client object
+        /// </summary>
+        public TcpAppServerConnection Client { get; set; }
+        /// <summary>
         /// Output message to be send to client.
         /// </summary>
         public string OutputMessage { get; set; } = string.Empty;

@@ -16,6 +16,9 @@ namespace CodeArtEng.Tcp
     /// </summary>
     public class TcpAppServer : TcpServer
     {
+        private long Counter = 0;
+
+        private readonly List<TcpAppServerConnection> Clients = new List<TcpAppServerConnection>();
         private readonly List<TcpAppCommand> Commands = new List<TcpAppCommand>();
         private readonly List<TcpAppServerPluginType> PluginTypes = new List<TcpAppServerPluginType>();
         private readonly List<ITcpAppServerPlugin> Plugins = new List<ITcpAppServerPlugin>();
@@ -39,6 +42,7 @@ namespace CodeArtEng.Tcp
             MessageDelimiter = Convert.ToByte(Convert.ToChar(TcpAppCommon.Delimiter));
             base.ClientConnected += TcpAppServer_ClientConnected;
             base.ClientDisconnected += TcpAppServer_ClientDisconnected;
+            base.ServerStopped += TcpAppServer_ServerStopped;
 
             //TcpAppServer Format: 
             // TX: TCP: <Command> [-Param0] [-Param1] ... [-ParamN]
@@ -50,7 +54,18 @@ namespace CodeArtEng.Tcp
             //--- INIT (Commands used by TcpAppClient) ---
             RegisterSystemCommand("TcpAppInit", "Initialize TCP Application.", delegate (TcpAppInputCommand sender)
                 {
+                    //Assign Name
+                    string name = sender.Command.Parameter("Name").Value;
+                    if (string.IsNullOrEmpty(name)) name = "(" + (++Counter).ToString() + ")" + sender.Client.Connection.ClientIPAddress.ToString();
+                    sender.Client.Name = name;
+
                     sender.OutputMessage = string.IsNullOrEmpty(WelcomeMessage) ? Application.ProductName + " " + Application.ProductVersion : WelcomeMessage;
+                    sender.Status = TcpAppCommandStatus.OK;
+                },
+                TcpAppParameter.CreateOptionalParameter("Name", "Client Name. Auto assign by server if not defined.", ""));
+            RegisterSystemCommand("Name?", "Get Connection Name", delegate (TcpAppInputCommand sender)
+                {
+                    sender.OutputMessage = sender.Client.Name;
                     sender.Status = TcpAppCommandStatus.OK;
                 });
             RegisterSystemCommand("Version?", "Get TcpAppServer Library Version", delegate (TcpAppInputCommand sender)
@@ -182,6 +197,11 @@ namespace CodeArtEng.Tcp
             //-- User Interaction --
             RegisterSystemCommand("Help", "Show help screen. Include plugin type or object alias name to show commands for selected plugin.", ShowHelp,
                 TcpAppParameter.CreateOptionalParameter("Plugin", "Plugin type or Alias", "-"));
+        }
+
+        private void TcpAppServer_ServerStopped(object sender, EventArgs e)
+        {
+            Clients.Clear();
         }
 
         private void TerminateApplication()
@@ -357,12 +377,14 @@ namespace CodeArtEng.Tcp
 
         private void TcpAppServer_ClientConnected(object sender, TcpServerEventArgs e)
         {
+            Clients.Add(new TcpAppServerConnection() { Connection = e.Client });
             e.Client.ProcessReceivedMessageCallback = Client_ProcessReceivedMessage;
         }
 
         private void TcpAppServer_ClientDisconnected(object sender, TcpServerEventArgs e)
         {
-
+            TcpAppServerConnection ptrClient = Clients.FirstOrDefault(x => x.Connection == e.Client);
+            if (ptrClient != null) Clients.Remove(ptrClient);
         }
 
         private void Client_ProcessReceivedMessage(TcpServerConnection client, string message, byte[] messageBytes)
@@ -381,6 +403,7 @@ namespace CodeArtEng.Tcp
                     {
                         //Execute plugin command
                         inputCommand = plugin.ExecutePluginCommand(cmdArg.Skip(1).ToArray());
+                        inputCommand.Client = Clients.FirstOrDefault(x => x.Connection == client);
                     }
                     else
                     {
@@ -390,7 +413,12 @@ namespace CodeArtEng.Tcp
                         return;
                     }
                 }
-                else inputCommand.ExecuteCallback(); //Execute registered command
+                else
+                {
+                    inputCommand.Client = Clients.FirstOrDefault(x => x.Connection == client);
+                    inputCommand.ExecuteCallback(); //Execute registered command
+                }
+
 
                 WriteResultToClient(client, inputCommand); //Send result back to client.
             }
@@ -402,7 +430,7 @@ namespace CodeArtEng.Tcp
 
         private void WriteResultToClient(TcpServerConnection client, TcpAppInputCommand input)
         {
-            string returnMsg = input.Status.ToString() + TcpAppCommon.NewLine;
+            string returnMsg = input.Status.ToString() + " ";
             if (!string.IsNullOrEmpty(input.OutputMessage)) returnMsg += input.OutputMessage;
             System.Diagnostics.Trace.WriteLine("Write to Client : " + returnMsg);
             client.WriteLineToClient(returnMsg);
@@ -410,7 +438,7 @@ namespace CodeArtEng.Tcp
 
         private void WriteExceptionErrorToClient(TcpServerConnection client, Exception ex)
         {
-            string returnMsg = TcpAppCommandStatus.ERR + TcpAppCommon.NewLine + ex.Message;
+            string returnMsg = TcpAppCommandStatus.ERR + " " + ex.Message;
             System.Diagnostics.Trace.WriteLine("Write to Client: " + returnMsg);
             client.WriteLineToClient(returnMsg);
         }
