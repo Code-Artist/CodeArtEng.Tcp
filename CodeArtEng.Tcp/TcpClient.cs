@@ -210,8 +210,9 @@ namespace CodeArtEng.Tcp
         /// <remarks>Automatic check and establish connection with server.</remarks>
         public void Write(byte[] dataBytes)
         {
-            if (!Connected) Reconnect();
+            if (dataBytes == null) throw new ArgumentNullException(nameof(dataBytes));
 
+            if (!Connected) Reconnect();
             TcpStream.Write(dataBytes, 0, dataBytes.Length);
             TcpStream.Flush();
         }
@@ -356,6 +357,7 @@ namespace CodeArtEng.Tcp
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
         #endregion
     }

@@ -24,9 +24,8 @@ namespace TcpAppClientTerminal
             Client.ConnectionStatusChanged += Client_ConnectionStatusChanged;
             Client.ResponseReceived += Client_ResponseReceived;
             Client.CommandSend += Client_CommandSend;
-
+            
             TerminalOutput.Clear();
-
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -34,12 +33,12 @@ namespace TcpAppClientTerminal
             Client.Dispose(); Client = null;
         }
 
-        private void Client_CommandSend(object sender, TcpAppEventArgs e)
+        private void Client_CommandSend(object sender, TcpAppClientEventArgs e)
         {
             AppendOutput(e.Message + "\n", Color.Yellow);
         }
 
-        private void Client_ResponseReceived(object sender, TcpAppEventArgs e)
+        private void Client_ResponseReceived(object sender, TcpAppClientEventArgs e)
         {
             if (e.Message.StartsWith("ERR"))
                 AppendOutput(e.Message, Color.Red);
@@ -57,6 +56,7 @@ namespace TcpAppClientTerminal
 
         private void Client_ConnectionStatusChanged(object sender, EventArgs e)
         {
+            if (Client == null) return;
             if (Client.Connected)
             {
                 this.BeginInvoke(new MethodInvoker(ClientConnected));

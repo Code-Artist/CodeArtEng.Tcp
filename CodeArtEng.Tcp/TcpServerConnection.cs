@@ -136,6 +136,7 @@ namespace CodeArtEng.Tcp
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion
@@ -225,7 +226,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Message Received callback. To be implement by derived class to process received message.
         /// </summary>
-        public ProcessReceivedMessage ProcessReceivedMessageCallback;
+        public ProcessReceivedMessage ProcessReceivedMessageCallback { get; set; }
 
         /// <summary>
         /// Write string to client.
@@ -251,6 +252,8 @@ namespace CodeArtEng.Tcp
         /// <param name="buffer"></param>
         public void WriteToClient(byte[] buffer)
         {
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+
             TcpStream.Write(buffer, 0, buffer.Length);
             BytesSent?.Invoke(this, new TcpServerDataEventArgs(this, buffer, buffer.Length));
             TcpStream.Flush();

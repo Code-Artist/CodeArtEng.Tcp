@@ -29,16 +29,16 @@
         private void InitializeComponent()
         {
             this.PnSendCommand = new System.Windows.Forms.Panel();
+            this.CommandBox = new System.Windows.Forms.ComboBox();
+            this.CbFunctions = new System.Windows.Forms.ComboBox();
             this.BtSend = new System.Windows.Forms.Button();
             this.TerminalOutput = new System.Windows.Forms.RichTextBox();
-            this.CbFunctions = new System.Windows.Forms.ComboBox();
             this.BtConnect = new System.Windows.Forms.Button();
             this.TxtPort = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.TxtHostName = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.CommandBox = new System.Windows.Forms.ComboBox();
             this.PnSendCommand.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -54,13 +54,33 @@
             this.PnSendCommand.Size = new System.Drawing.Size(901, 30);
             this.PnSendCommand.TabIndex = 0;
             // 
+            // CommandBox
+            // 
+            this.CommandBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.CommandBox.FormattingEnabled = true;
+            this.CommandBox.Location = new System.Drawing.Point(202, 4);
+            this.CommandBox.Name = "CommandBox";
+            this.CommandBox.Size = new System.Drawing.Size(613, 21);
+            this.CommandBox.TabIndex = 1;
+            this.CommandBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.CommandBox_KeyDown);
+            // 
+            // CbFunctions
+            // 
+            this.CbFunctions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CbFunctions.FormattingEnabled = true;
+            this.CbFunctions.Location = new System.Drawing.Point(6, 4);
+            this.CbFunctions.Name = "CbFunctions";
+            this.CbFunctions.Size = new System.Drawing.Size(190, 21);
+            this.CbFunctions.TabIndex = 0;
+            // 
             // BtSend
             // 
             this.BtSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.BtSend.Location = new System.Drawing.Point(821, 3);
             this.BtSend.Name = "BtSend";
             this.BtSend.Size = new System.Drawing.Size(75, 22);
-            this.BtSend.TabIndex = 1;
+            this.BtSend.TabIndex = 2;
             this.BtSend.Text = "Send";
             this.BtSend.UseVisualStyleBackColor = true;
             this.BtSend.Click += new System.EventHandler(this.BtSend_Click);
@@ -76,15 +96,6 @@
             this.TerminalOutput.Size = new System.Drawing.Size(901, 396);
             this.TerminalOutput.TabIndex = 1;
             this.TerminalOutput.Text = "Response Text";
-            // 
-            // CbFunctions
-            // 
-            this.CbFunctions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.CbFunctions.FormattingEnabled = true;
-            this.CbFunctions.Location = new System.Drawing.Point(6, 4);
-            this.CbFunctions.Name = "CbFunctions";
-            this.CbFunctions.Size = new System.Drawing.Size(190, 21);
-            this.CbFunctions.TabIndex = 0;
             // 
             // BtConnect
             // 
@@ -142,17 +153,6 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(901, 32);
             this.panel1.TabIndex = 4;
-            // 
-            // CommandBox
-            // 
-            this.CommandBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.CommandBox.FormattingEnabled = true;
-            this.CommandBox.Location = new System.Drawing.Point(202, 4);
-            this.CommandBox.Name = "CommandBox";
-            this.CommandBox.Size = new System.Drawing.Size(613, 21);
-            this.CommandBox.TabIndex = 2;
-            this.CommandBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.CommandBox_KeyDown);
             // 
             // MainForm
             // 

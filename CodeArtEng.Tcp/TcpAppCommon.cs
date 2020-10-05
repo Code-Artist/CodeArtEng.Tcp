@@ -22,15 +22,15 @@ namespace CodeArtEng.Tcp
         {
             List<string> lines = new List<string> { "==== COMMANDS ====" };
             TcpAppCommand[] systemCommands = commands.Where(x => x.IsSystemCommand).ToArray();
-            if (systemCommands.Count() > 0)
+            if (systemCommands.Any())
             {
                 lines.Add("[ SYSTEM COMMANDS ]");
                 PrintCommandDetails(lines, systemCommands);
                 lines.Add(" ");
             }
 
-            TcpAppCommand[] appCommands = commands.Where(x => !x.IsSystemCommand).ToArray();
-            if (appCommands.Count() > 0)
+            TcpAppCommand[] appCommands = commands.Where(x => !x.IsSystemCommand).OrderBy(n => n.Keyword).ToArray();
+            if (appCommands.Any())
             {
                 lines.Add("[ APPLICATION COMMANDS ]");
                 PrintCommandDetails(lines, appCommands);

@@ -53,8 +53,10 @@ namespace CodeArtEng.Tcp
         /// <param name="parameter"></param>
         public void AddParameter(TcpAppParameter parameter)
         {
+            if (parameter == null) throw new ArgumentNullException(nameof(parameter));
+
             //Sanity Check
-            if (Params.FirstOrDefault(x => x.Name.Equals(parameter.Name)) != null)
+            if (Params.FirstOrDefault(x => x.Name.Equals(parameter.Name, StringComparison.InvariantCultureIgnoreCase)) != null)
             {
                 //Duplicated parameter, throw exception.
                 throw new ArgumentException("Unable to add parameter " + parameter.Name + ", alredy exist!");

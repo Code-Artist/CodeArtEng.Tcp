@@ -1,6 +1,7 @@
 ﻿using CodeArtEng.Tcp;
 using System;
 using System.Text;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace TcpServerExample
@@ -32,7 +33,7 @@ namespace TcpServerExample
             AppServer.MaxClients = 5;
             AppServer.ClientConnected += AppServer_ClientConnected;
             AppServer.ClientDisconnected += AppServer_ClientDisconnected;
-
+            AppServer.ClientSignedIn += AppServer_ClientInitialized;
 
             //TCP Application Server Customization Test
             AppServer.RegisterCommand("CustomFunction", "Dummy Custom Function", customFunctionCallback);
@@ -223,6 +224,11 @@ namespace TcpServerExample
             LogRX(tcpAppServerLog, e.ReceivedMessage);
         }
 
+        private void AppServer_ClientInitialized(object sender, TcpAppServerEventArgs e)
+        {
+            RefreshClientList();
+        }
+
         private void AppServer_ClientConnected(object sender, TcpServerEventArgs e)
         {
             if (InvokeRequired)
@@ -243,6 +249,19 @@ namespace TcpServerExample
                 return;
             }
             LogInfo(tcpAppServerLog, "Client Disconnected: " + e.Client.ClientIPAddress);
+            RefreshClientList();
+        }
+
+        private void RefreshClientList()
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new MethodInvoker(RefreshClientList));
+                return;
+            }
+            LstClients.Items.Clear();
+            LstClients.Items.AddRange(AppServer.AppClients.Select(x => x.Name + "(" +
+                (x.Connection.Connected ? "Connected" : "Disconnect") + ")").ToArray());
         }
 
         private void Form1_Shown(object sender, EventArgs e)

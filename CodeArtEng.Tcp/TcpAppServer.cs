@@ -11,14 +11,26 @@ namespace CodeArtEng.Tcp
     /// <param name="sender"></param>
     public delegate void TcpAppServerExecuteDelegate(TcpAppInputCommand sender);
 
+
     /// <summary>
     /// TCP Application Server
     /// </summary>
     public class TcpAppServer : TcpServer
     {
         private long Counter = 0;
+        /// <summary>
+        /// Occur when <see cref="TcpAppClient"/> executed TcpAppInit command successfully.
+        /// </summary>
+        public event EventHandler<TcpAppServerEventArgs> ClientSignedIn;
+        /// <summary>
+        /// Occur when <see cref="TcpAppClient"/> disconnected from server.
+        /// </summary>
+        public event EventHandler<TcpAppServerEventArgs> ClientSigningOut;
 
-        private readonly List<TcpAppServerConnection> Clients = new List<TcpAppServerConnection>();
+        /// <summary>
+        /// <see cref="TcpAppClient"/> connected to server.
+        /// </summary>
+        public List<TcpAppServerConnection> AppClients { get; private set; } = new List<TcpAppServerConnection>();
         private readonly List<TcpAppCommand> Commands = new List<TcpAppCommand>();
         private readonly List<TcpAppServerPluginType> PluginTypes = new List<TcpAppServerPluginType>();
         private readonly List<ITcpAppServerPlugin> Plugins = new List<ITcpAppServerPlugin>();
@@ -52,20 +64,46 @@ namespace CodeArtEng.Tcp
 
             //Register System Commands
             //--- INIT (Commands used by TcpAppClient) ---
-            RegisterSystemCommand("TcpAppInit", "Initialize TCP Application.", delegate (TcpAppInputCommand sender)
+            RegisterSystemCommand("SignIn", "Sign in to TcpAppServer. Server will verify connection id and return unique ID.", delegate (TcpAppInputCommand sender)
                 {
                     //Assign Name
-                    string name = sender.Command.Parameter("Name").Value;
-                    if (string.IsNullOrEmpty(name)) name = "(" + (++Counter).ToString() + ")" + sender.Client.Connection.ClientIPAddress.ToString();
-                    sender.Client.Name = name;
+                    string name = sender.AppClient.Connection.ClientIPAddress.ToString();
+                    string machineName = sender.Command.Parameter("ConnectionID").Value?.Replace(" ", "_");
+                    if (!string.IsNullOrEmpty(machineName)) name += "_" + machineName;
 
-                    sender.OutputMessage = string.IsNullOrEmpty(WelcomeMessage) ? Application.ProductName + " " + Application.ProductVersion : WelcomeMessage;
+                    string uniqueName = name;
+                    lock (AppClients)
+                    {
+                        //Cleanup instance with same name but already disconnected without signout
+                        if (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
+                        {
+                            for (int x = 0; x < AppClients.Count;)
+                            {
+                                if (!AppClients[x].Connection.Connected && AppClients[x].Name.StartsWith(uniqueName))
+                                {
+                                    AppClients.RemoveAt(x);
+                                }
+                                else x++;
+                            }
+                        }
+                    }
+
+                    while (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
+                    {
+                        uniqueName = name + "_" + (++Counter).ToString();
+                    }
+                    sender.AppClient.Name = uniqueName;
+                    sender.OutputMessage = uniqueName;
                     sender.Status = TcpAppCommandStatus.OK;
+                    sender.AppClient.SignedIn = true;
+                    ClientSignedIn?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient)); //Event
                 },
-                TcpAppParameter.CreateOptionalParameter("Name", "Client Name. Auto assign by server if not defined.", ""));
-            RegisterSystemCommand("Name?", "Get Connection Name", delegate (TcpAppInputCommand sender)
+                TcpAppParameter.CreateParameter("ConnectionID", "Connection ID. If already exist, server will return an updated unique ID."));
+            RegisterSystemCommand("SignOut", "Signout TcpAppClient.", delegate (TcpAppInputCommand sender)
                 {
-                    sender.OutputMessage = sender.Client.Name;
+                    ClientSigningOut?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient));
+                    AppClients.Remove(sender.AppClient);
+                    sender.AppClient.SignedIn = false;
                     sender.Status = TcpAppCommandStatus.OK;
                 });
             RegisterSystemCommand("Version?", "Get TcpAppServer Library Version", delegate (TcpAppInputCommand sender)
@@ -73,6 +111,9 @@ namespace CodeArtEng.Tcp
                     sender.OutputMessage = Version.ToString();
                     sender.Status = TcpAppCommandStatus.OK;
                 });
+            RegisterSystemCommand("Help", "Show help screen. Include plugin type or object alias name to show commands for selected plugin.", ShowHelp,
+                TcpAppParameter.CreateOptionalParameter("Plugin", "Plugin type or Alias", "-"));
+
             RegisterSystemCommand("FunctionList?", "Get list of registered functions.", delegate (TcpAppInputCommand sender)
                 {
                     foreach (TcpAppCommand x in Commands)
@@ -82,8 +123,6 @@ namespace CodeArtEng.Tcp
                     }
                     sender.Status = TcpAppCommandStatus.OK;
                 });
-
-            //-- APP INFO --
             RegisterSystemCommand("ApplicationName?", "Get Application Name.", delegate (TcpAppInputCommand sender)
             {
                 sender.OutputMessage = Application.ProductName;
@@ -94,6 +133,22 @@ namespace CodeArtEng.Tcp
                 sender.OutputMessage = Application.ProductVersion;
                 sender.Status = TcpAppCommandStatus.OK;
             });
+            RegisterSystemCommand("Terminate", "Terminate Application. Default Exit Code = -99", delegate (TcpAppInputCommand sender)
+            {
+                VerifyUserSignedIn(sender);
+                int exitCode = -99;
+                try
+                {
+                    exitCode = Convert.ToInt32(sender.Command.Parameter("ExitCode").Value);
+                }
+                catch { }
+                sender.Status = TcpAppCommandStatus.OK;
+
+                Environment.ExitCode = exitCode;
+                System.Threading.Thread ptrThread = new System.Threading.Thread(TerminateApplication);
+                ptrThread.Start();
+            },
+                TcpAppParameter.CreateOptionalParameter("ExitCode", "Assign Exit Code for application termination.", "-99"));
 
             //--- PLUGIN ---
             RegisterSystemCommand("PluginTypes?", "Get list of plugin class type. Use CreateObject command to instantiate type.", delegate (TcpAppInputCommand sender)
@@ -104,6 +159,7 @@ namespace CodeArtEng.Tcp
                 });
             RegisterSystemCommand("CreateObject", "Create an object from listed plugin types.", delegate (TcpAppInputCommand sender)
                 {
+                    VerifyUserSignedIn(sender);
                     string typeName = sender.Command.Parameter("TypeName").Value;
 
                     //Sanity Check - Type Name
@@ -145,8 +201,10 @@ namespace CodeArtEng.Tcp
                 });
             RegisterSystemCommand("Execute", "Execute plugin's command.", delegate (TcpAppInputCommand sender)
                 {
+                    VerifyUserSignedIn(sender);
                     ITcpAppServerPlugin plugin = Plugins.FirstOrDefault(x => string.Compare(x.Alias, sender.Command.Parameter("Alias").Value, true) == 0);
-                    if (plugin == null) throw new ArgumentNullException("Plugin not exists!");
+                    if (plugin == null) throw new ArgumentException("Plugin not exists!");
+
                     TcpAppInputCommand pluginCommand = plugin.ExecutePluginCommand(sender.Arguments.Skip(1).ToArray());
                     sender.Status = pluginCommand.Status;
                     sender.OutputMessage = pluginCommand.OutputMessage;
@@ -154,6 +212,7 @@ namespace CodeArtEng.Tcp
                 TcpAppParameter.CreateParameter("Alias", "Plugin object Alias Name."));
             RegisterSystemCommand("DisposeObject", "Delete object by alias name.", delegate (TcpAppInputCommand sender)
                 {
+                    VerifyUserSignedIn(sender);
                     string alias = sender.Command.Parameter("Alias").Value;
                     ITcpAppServerPlugin item = Plugins.FirstOrDefault(x => string.Compare(x.Alias, alias, true) == 0);
                     if (item == null)
@@ -177,26 +236,12 @@ namespace CodeArtEng.Tcp
                     }
                 },
                 TcpAppParameter.CreateParameter("Alias", "Object alias name."));
+        }
 
-            RegisterSystemCommand("Terminate", "Terminate Application. Default Exit Code = -99", delegate (TcpAppInputCommand sender)
-                {
-                    int exitCode = -99;
-                    try
-                    {
-                        exitCode = Convert.ToInt32(sender.Command.Parameter("ExitCode").Value);
-                    }
-                    catch { }
-                    sender.Status = TcpAppCommandStatus.OK;
-
-                    Environment.ExitCode = exitCode;
-                    System.Threading.Thread ptrThread = new System.Threading.Thread(TerminateApplication);
-                    ptrThread.Start();
-                },
-                TcpAppParameter.CreateOptionalParameter("ExitCode", "Assign Exit Code for application termination.", "-99"));
-
-            //-- User Interaction --
-            RegisterSystemCommand("Help", "Show help screen. Include plugin type or object alias name to show commands for selected plugin.", ShowHelp,
-                TcpAppParameter.CreateOptionalParameter("Plugin", "Plugin type or Alias", "-"));
+        private void VerifyUserSignedIn(TcpAppInputCommand command)
+        {
+            if (command.AppClient.SignedIn) return;
+            throw new InvalidOperationException("Client not signed in!");
         }
 
         private void TcpAppServer_ServerStopped(object sender, EventArgs e)
@@ -235,6 +280,7 @@ namespace CodeArtEng.Tcp
 
         private TcpAppCommand RegisterCommandInt(string command, string description, TcpAppServerExecuteDelegate executeCallback, params TcpAppParameter[] parameters)
         {
+            if (string.IsNullOrEmpty(command)) throw new ArgumentNullException(nameof(command));
             if (GetCommand(command) != null) throw new ArgumentException("Failed to register command [" + command + "], already exist!");
             if (command.Contains(" ")) throw new ArgumentException("Invalid Character in command name, space ' ' is not allowed!");
 
@@ -260,6 +306,7 @@ namespace CodeArtEng.Tcp
         /// <param name="pluginType"></param>
         public void RegisterPluginType(Type pluginType)
         {
+            if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
             if (PluginTypes.FirstOrDefault(x => x.Type == pluginType) != null)
                 throw new ArgumentException("Unable to register plugin " + pluginType.ToString() + ", type already registered!");
 
@@ -294,10 +341,10 @@ namespace CodeArtEng.Tcp
             List<string> lines = null;
             if (aliasName == "-")
             {
-                //Print Help Screen - Write to sender.OutputMessage
                 lines = new List<string>
                     {
-                        "TCP Aplication Server Version " + Version.ToString(),
+                        Application.ProductName +  " V" + Application.ProductVersion.ToString(),
+                        "[ TCP Aplication Server V" + Version.ToString() + " ]",
                         " ",
                         "==== USAGE ====",
                         "  Execute Tcp App Server Command:",
@@ -377,14 +424,13 @@ namespace CodeArtEng.Tcp
 
         private void TcpAppServer_ClientConnected(object sender, TcpServerEventArgs e)
         {
-            Clients.Add(new TcpAppServerConnection() { Connection = e.Client });
+            AppClients.Add(new TcpAppServerConnection() { Connection = e.Client, Name = "(" + e.Client.ClientIPAddress.ToString() + ")" });
             e.Client.ProcessReceivedMessageCallback = Client_ProcessReceivedMessage;
         }
 
         private void TcpAppServer_ClientDisconnected(object sender, TcpServerEventArgs e)
         {
-            TcpAppServerConnection ptrClient = Clients.FirstOrDefault(x => x.Connection == e.Client);
-            if (ptrClient != null) Clients.Remove(ptrClient);
+            //Do nothing
         }
 
         private void Client_ProcessReceivedMessage(TcpServerConnection client, string message, byte[] messageBytes)
@@ -394,7 +440,6 @@ namespace CodeArtEng.Tcp
             try
             {
                 TcpAppInputCommand inputCommand = TcpAppCommon.CreateInputCommand(Commands, cmdArg);
-
                 if (inputCommand == null)
                 {
                     //Check if command keyword is alias name
@@ -403,7 +448,7 @@ namespace CodeArtEng.Tcp
                     {
                         //Execute plugin command
                         inputCommand = plugin.ExecutePluginCommand(cmdArg.Skip(1).ToArray());
-                        inputCommand.Client = Clients.FirstOrDefault(x => x.Connection == client);
+                        inputCommand.AppClient = AppClients.FirstOrDefault(x => x.Connection == client);
                     }
                     else
                     {
@@ -415,11 +460,12 @@ namespace CodeArtEng.Tcp
                 }
                 else
                 {
-                    inputCommand.Client = Clients.FirstOrDefault(x => x.Connection == client);
+                    inputCommand.AppClient = AppClients.FirstOrDefault(x => x.Connection == client);
+                    if (!inputCommand.AppClient.SignedIn && !inputCommand.Command.IsSystemCommand)
+                        throw new Exception("Client not signed in! Execute SignIn first.");
+
                     inputCommand.ExecuteCallback(); //Execute registered command
                 }
-
-
                 WriteResultToClient(client, inputCommand); //Send result back to client.
             }
             catch (Exception ex)

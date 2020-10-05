@@ -13,22 +13,17 @@ namespace CodeArtEng.Tcp
     /// </summary>
     public class TcpAppClient : TcpClient
     {
+        private bool Initialized = false;
+        private Version TcpAppServerVersion { get; set; }
+
         /// <summary>
         /// Occurs when Command sent to TCP Server
         /// </summary>
-        public event EventHandler<TcpAppEventArgs> CommandSend;
+        public event EventHandler<TcpAppClientEventArgs> CommandSend;
         /// <summary>
         /// Occurs when Command received from TCP Server
         /// </summary>
-        public event EventHandler<TcpAppEventArgs> ResponseReceived;
-
-        private bool Initialized = false;
-
-        /// <summary>
-        /// Name of current instance.
-        /// </summary>
-        public string Name { get; set; }
-
+        public event EventHandler<TcpAppClientEventArgs> ResponseReceived;
 
         /// <summary>
         /// Return Server Application Name
@@ -39,11 +34,14 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public string ServerAppVersion { get; private set; }
 
-        private Version TcpAppServerVersion { get; set; }
         /// <summary>
         /// List of registered commands read from TcpAppServer
         /// </summary>
         public List<string> Commands { get; private set; } = new List<string>();
+        /// <summary>
+        /// List of plugin objects created in server application.
+        /// </summary>
+        public List<string> PluginObjects { get; private set; } = new List<string>();
 
         /// <summary>
         /// Return version of CodeArtEng.Tcp Assembly
@@ -54,14 +52,14 @@ namespace CodeArtEng.Tcp
         /// Constructor
         /// </summary>
         /// <param name="name"></param>
-        public TcpAppClient(string name = null) : base() { InitInstance(); Name = name; }
+        public TcpAppClient() : base() { InitInstance(); }
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="hostName"></param>
         /// <param name="port"></param>
         /// <param name="name"></param>
-        public TcpAppClient(string hostName, int port, string name = null) : base(hostName, port) { InitInstance(); Name = name; }
+        public TcpAppClient(string hostName, int port) : base(hostName, port) { InitInstance(); }
 
         private void InitInstance()
         {
@@ -70,7 +68,7 @@ namespace CodeArtEng.Tcp
 
         private void TcpAppClient_ConnectionStatusChanged(object sender, EventArgs e)
         {
-            if (!Connected) Initialized = false;
+            //if (!Connected) Initialized = false;
         }
 
         /// <summary>
@@ -87,18 +85,26 @@ namespace CodeArtEng.Tcp
                 SuspendDataReceivedEvent = true;
                 string commandKeyword = command.Split(' ').First();
 
-                //ToDo: TcpAppClient - Disable local command verification?
+                //ToDo: TcpAppClient - Command Verification does not know about plugin, blocked plugin command!
                 //Verify command registered in function list, only active after Connect() sequence completed.
-                //if (Initialized)
-                //{
-                //    if (!Commands.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
-                //    {
-                //        throw new TcpAppClientException("Invalid Command: " + commandKeyword);
-                //    }
-                //}
+                if (Initialized)
+                {
+                    //Compare command keyword
+                    if (!Commands.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
+                    {
+                        //Compare plugin object list
+                        if (!PluginObjects.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
+                        {
+                            RefreshPluginObjects(); //Get latest plugin objects from server
+                            if (!PluginObjects.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
+                                throw new TcpAppClientException("Invalid Command: " + commandKeyword); //Still no match, FAILED!
+                        }
+                    }
+                }
 
                 string tcpCommand = command + TcpAppCommon.Delimiter;
-                CommandSend?.Invoke(this, new TcpAppEventArgs(command));
+                CommandSend?.Invoke(this, new TcpAppClientEventArgs(command));
+                FlushInputBuffer();
                 Write(tcpCommand);
 
                 DateTime startTime = DateTime.Now;
@@ -106,7 +112,7 @@ namespace CodeArtEng.Tcp
                 //while(true)
                 {
                     string response = ReadString();
-                    ResponseReceived?.Invoke(this, new TcpAppEventArgs(response));
+                    ResponseReceived?.Invoke(this, new TcpAppClientEventArgs(response));
                     if (!string.IsNullOrEmpty(response))
                     {
                         string[] resultParams = response.Split(' ');
@@ -139,47 +145,67 @@ namespace CodeArtEng.Tcp
         /// <returns></returns>
         public TcpAppCommandResult ExecuteCommand(string command, int timeout = 1000)
         {
-            if (!Connected) throw new TcpAppClientException("Connection with server not established!");
             if (!Initialized) throw new TcpAppClientException("TcpApp not initialized, execute Connect() first!");
+            if (!Connected) Connect();
             return ExecuteTcpAppCommand(command, timeout);
         }
 
+
         /// <summary>
-        /// Connect to TCP server and initialize TCP Application.
+        /// Connect and signin to <see cref="TcpAppServer"/>
         /// </summary>
         public override void Connect()
         {
-            Initialized = false;
             base.Connect();
             Thread.Sleep(50);
-            TcpAppCommandResult result = ExecuteTcpAppCommand("TcpAppInit", 3000);
-            string[] param = result.ReturnMessage.Trim().Split(' ');
-            ServerAppName = param[0];
-            ServerAppVersion = param[1];
 
-            result = ExecuteTcpAppCommand("Name?");
+            TcpAppCommandResult result = ExecuteTcpAppCommand("SignIn " + Environment.MachineName, 3000);
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
-            Name = result.ReturnMessage;
 
-            result = ExecuteTcpAppCommand("Version?");
-            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
-            TcpAppServerVersion = new Version(result.ReturnMessage);
-
-            //Version Check - Always recommend user to use library from same major release.
-            if (TcpAppServerVersion.Major > Version.Major)
+            if (!Initialized)
             {
-                Trace.WriteLine("WARNING: Server application created with newer library, version " +
-                    TcpAppServerVersion.ToString() + ". Some feature might not be available.");
+                //First time login
+                //TcpAppServer API Version Check - Always recommend user to use library from same major release.
+                result = ExecuteTcpAppCommand("Version?");
+                if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
+                TcpAppServerVersion = new Version(result.ReturnMessage);
+                if (TcpAppServerVersion.Major > Version.Major)
+                {
+                    Trace.WriteLine("WARNING: Server application created with newer library, version " +
+                        TcpAppServerVersion.ToString() + ". Some feature might not be available.");
+                }
+
+                result = ExecuteTcpAppCommand("FunctionList?");
+                if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
+                Commands.AddRange(result.ReturnMessage.Split(' '));
+
+                RefreshPluginObjects();
+                Trace.WriteLine("TCP Application Connection Ready.");
             }
-
-            result = ExecuteTcpAppCommand("FunctionList?");
-            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
-            Commands.AddRange(result.ReturnMessage.Split(' '));
-
-            Trace.WriteLine("TCP Application Connection Ready.");
             Initialized = true;
         }
 
+        /// <summary>
+        /// Signout and disconnect client.
+        /// </summary>
+        public override void Disconnect()
+        {
+            TcpAppCommandResult result = ExecuteTcpAppCommand("SignOut");
+            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to SignOut client! " + result.ReturnMessage);
+            base.Disconnect();
+        }
+
+        /// <summary>
+        /// Read plugin objects created by Server's application
+        /// </summary>
+        public void RefreshPluginObjects()
+        {
+            PluginObjects.Clear();
+            TcpAppCommandResult result = ExecuteTcpAppCommand("Objects?");
+            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to get plugin objects list from server! " + result.ReturnMessage);
+            if (result.ReturnMessage.Equals("-NONE-")) return;
+            PluginObjects.AddRange(result.ReturnMessage.Split('\r').Select( x=> x.Split('(')[0].Trim()).ToArray());
+        }
     }
 
 }

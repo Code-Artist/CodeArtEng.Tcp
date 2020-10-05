@@ -15,7 +15,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Handle to Client object
         /// </summary>
-        public TcpAppServerConnection Client { get; set; }
+        public TcpAppServerConnection AppClient { get; set; }
         /// <summary>
         /// Output message to be send to client.
         /// </summary>

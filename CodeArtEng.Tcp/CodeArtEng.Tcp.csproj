@@ -23,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\CodeArtEng.Tcp.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -51,12 +52,13 @@
     <Compile Include="TcpAppCommon.cs" />
     <Compile Include="TcpAppInputCommand.cs" />
     <Compile Include="TcpAppServerConnection.cs" />
+    <Compile Include="TcpAppServerEventArgs.cs" />
     <Compile Include="TcpAppServerPluginType.cs" />
     <Compile Include="TcpClientException.cs" />
     <Compile Include="TcpAppClientException.cs" />
     <Compile Include="TcpAppCommand.cs" />
     <Compile Include="TcpAppCommandStatus.cs" />
-    <Compile Include="TcpAppEventArgs.cs" />
+    <Compile Include="TcpAppClientEventArgs.cs" />
     <Compile Include="TcpAppParameter.cs" />
     <Compile Include="TcpAppServer.cs" />
     <Compile Include="TcpAppServerPlugin.cs" />

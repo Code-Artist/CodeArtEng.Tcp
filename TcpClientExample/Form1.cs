@@ -24,7 +24,7 @@ namespace TcpClientExample
             btWrite.Enabled = false;
         }
 
-        private void AppClient_ResponseReceived(object sender, TcpAppEventArgs e)
+        private void AppClient_ResponseReceived(object sender, TcpAppClientEventArgs e)
         {
             tcpAppLog.SelectionColor = System.Drawing.Color.DarkGreen;
             tcpAppLog.AppendText(e.Message);
@@ -32,7 +32,7 @@ namespace TcpClientExample
             tcpAppLog.ScrollToCaret();
         }
 
-        private void AppClient_CommandSend(object sender, TcpAppEventArgs e)
+        private void AppClient_CommandSend(object sender, TcpAppClientEventArgs e)
         {
             tcpAppLog.SelectionColor = System.Drawing.Color.Blue;
             tcpAppLog.AppendText(e.Message +"\n");

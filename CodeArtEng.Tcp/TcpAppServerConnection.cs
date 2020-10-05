@@ -19,5 +19,7 @@ namespace CodeArtEng.Tcp
         /// Connection Object
         /// </summary>
         public TcpServerConnection Connection { get; set; }
+
+        public bool SignedIn { get; set; } = false;
     }
 }

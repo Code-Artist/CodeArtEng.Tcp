@@ -88,15 +88,6 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         [Test]
-        public void SystemCommand_TcpAppInit()
-        {
-            TcpAppCommandResult result = ExecuteCommand("TcpAppInit");
-            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.IsTrue(result.ReturnMessage.StartsWith("Microsoft.TestHost.x86"));
-        }
-
-
-        [Test]
         public void SystemCommand_ProgramName()
         {
             TcpAppCommandResult result = ExecuteCommand("applicationNAME?");
@@ -123,7 +114,6 @@ namespace CodeArtEng.Tcp.Tests
             //Check first line in help contents
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             Assert.Greater(lines.Count, 10);
-            Assert.IsTrue(lines[0].StartsWith("TCP Aplication Server Version"));
         }
 
     }
