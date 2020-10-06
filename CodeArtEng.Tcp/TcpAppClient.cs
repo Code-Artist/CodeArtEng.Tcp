@@ -25,6 +25,7 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public event EventHandler<TcpAppClientEventArgs> ResponseReceived;
 
+        public string ConnectionID { get; private set; }
         /// <summary>
         /// Return Server Application Name
         /// </summary>
@@ -68,7 +69,6 @@ namespace CodeArtEng.Tcp
 
         private void TcpAppClient_ConnectionStatusChanged(object sender, EventArgs e)
         {
-            //if (!Connected) Initialized = false;
         }
 
         /// <summary>
@@ -159,8 +159,9 @@ namespace CodeArtEng.Tcp
             base.Connect();
             Thread.Sleep(50);
 
-            TcpAppCommandResult result = ExecuteTcpAppCommand("SignIn " + Environment.MachineName, 3000);
+            TcpAppCommandResult result = ExecuteTcpAppCommand("SignIn " + (Initialized ? ConnectionID : Environment.MachineName), 3000); ;
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
+            ConnectionID = result.ReturnMessage;
 
             if (!Initialized)
             {
@@ -181,8 +182,8 @@ namespace CodeArtEng.Tcp
 
                 RefreshPluginObjects();
                 Trace.WriteLine("TCP Application Connection Ready.");
+                Initialized = true;
             }
-            Initialized = true;
         }
 
         /// <summary>
@@ -192,6 +193,8 @@ namespace CodeArtEng.Tcp
         {
             TcpAppCommandResult result = ExecuteTcpAppCommand("SignOut");
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to SignOut client! " + result.ReturnMessage);
+            ConnectionID = string.Empty;
+            Initialized = false;
             base.Disconnect();
         }
 
@@ -204,7 +207,7 @@ namespace CodeArtEng.Tcp
             TcpAppCommandResult result = ExecuteTcpAppCommand("Objects?");
             if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to get plugin objects list from server! " + result.ReturnMessage);
             if (result.ReturnMessage.Equals("-NONE-")) return;
-            PluginObjects.AddRange(result.ReturnMessage.Split('\r').Select( x=> x.Split('(')[0].Trim()).ToArray());
+            PluginObjects.AddRange(result.ReturnMessage.Split('\r').Select(x => x.Split('(')[0].Trim()).ToArray());
         }
     }
 

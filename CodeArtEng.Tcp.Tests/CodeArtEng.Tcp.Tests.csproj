@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="TcpAppClientTests.cs" />
     <Compile Include="TcpAppCommandTests.cs" />
+    <Compile Include="TcpAppServerClientTests.cs" />
     <Compile Include="TcpAppServerPluginTests.cs" />
     <Compile Include="TcpAppServerSamplePlugin.cs" />
     <Compile Include="TcpAppServerSimpleMath.cs" />
