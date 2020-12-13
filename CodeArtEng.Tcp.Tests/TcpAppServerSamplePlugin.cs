@@ -13,9 +13,9 @@ namespace CodeArtEng.Tcp.Tests
 
         public string Alias { get; set; }
 
-        public TcpAppInputCommand ExecutePluginCommand(string[] commandArguments)
+        public TcpAppInputCommand GetPluginCommand(string[] commandArguments)
         {
-            return TcpAppPlugin.ExecutePluginCommand(commandArguments);
+            return TcpAppPlugin.GetPluginCommand(commandArguments);
         }
 
         public TcpAppServerSamplePlugin()
@@ -26,6 +26,10 @@ namespace CodeArtEng.Tcp.Tests
                     sender.Status = TcpAppCommandStatus.OK;
                     sender.OutputMessage = "Command 1 Executed!";
                 });
+            TcpAppPlugin.RegisterQueuedCommand("LongDelay", "10s Delay", delegate (TcpAppInputCommand sender) { 
+                System.Threading.Thread.Sleep(10000);
+                sender.Status = TcpAppCommandStatus.OK;
+            });
         }
 
         public bool DisposeRequest()

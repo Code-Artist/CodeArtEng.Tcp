@@ -12,6 +12,11 @@ namespace CodeArtEng.Tcp
         internal TcpAppServerExecuteDelegate ExecuteCallback { get; set; }
 
         /// <summary>
+        /// Command which executed by message queues
+        /// </summary>
+        public bool UseMessageQueue { get; set; }
+
+        /// <summary>
         /// Command description
         /// </summary>
         public string Description { get; private set; }
@@ -97,6 +102,7 @@ namespace CodeArtEng.Tcp
             result.Keyword = Keyword;
             result.ExecuteCallback = ExecuteCallback;
             result.IsSystemCommand = IsSystemCommand;
+            result.UseMessageQueue = UseMessageQueue;
             foreach (TcpAppParameter p in Parameters) result.AddParameter(p);
             return result;
         }

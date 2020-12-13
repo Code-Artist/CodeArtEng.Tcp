@@ -33,6 +33,24 @@ namespace CodeArtEng.Tcp
         /// <param name="parameters"></param>
         public void RegisterCommand(string command, string description, TcpAppServerExecuteDelegate executeCallback, params TcpAppParameter[] parameters)
         {
+            RegisterCommandInt(command, description, executeCallback, parameters);
+        }
+
+        /// <summary>
+        /// Register new command which execute using command queue
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="description"></param>
+        /// <param name="executeCallback"></param>
+        /// <param name="parameters"></param>
+        public void RegisterQueuedCommand(string command, string description, TcpAppServerExecuteDelegate executeCallback, params TcpAppParameter[] parameters)
+        {
+            RegisterCommandInt(command, description, executeCallback, parameters).UseMessageQueue = true;
+        }
+
+        private TcpAppCommand RegisterCommandInt(string command, string description, TcpAppServerExecuteDelegate executeCallback, params TcpAppParameter[] parameters)
+        {
+            if (string.IsNullOrEmpty(command)) throw new ArgumentNullException(nameof(command));
             if (GetCommand(command) != null) throw new ArgumentException("Failed to register command [" + command + "], already exist!");
             if (command.Contains(" ")) throw new ArgumentException("Invalid Character in command name, space ' ' is not allowed!");
 
@@ -41,8 +59,17 @@ namespace CodeArtEng.Tcp
             {
                 tCmd.AddParameter(a);
             }
+
+            for (int x = 0; x < tCmd.Parameters.Count - 1; x++)
+            {
+                if (tCmd.Parameters[x].IsArray) throw new ArgumentException("Failed to register command [" + command +
+                     "], parameter array [" + tCmd.Parameters[x].Name + "] must be last parameter!");
+            }
+
             Commands.Add(tCmd);
+            return tCmd;
         }
+
 
         /// <summary>
         /// Print help screen for selected plugin components.
@@ -58,10 +85,12 @@ namespace CodeArtEng.Tcp
         /// Execute Plugin Callback. Call by ITcpAppServerPlugin
         /// </summary>
         /// <param name="commandArguments">Command keyword and arguments in string array.</param>
-        public TcpAppInputCommand ExecutePluginCommand(string [] commandArguments)
+        public TcpAppInputCommand GetPluginCommand(string [] commandArguments)
         {
+            if (commandArguments == null) throw new ArgumentNullException(nameof(commandArguments), "Invalid command / empty string!");
+
             TcpAppInputCommand command = TcpAppCommon.CreateInputCommand(Commands, commandArguments);
-            command.ExecuteCallback();
+            if (command == null) throw new ArgumentException("Unknown command: " + commandArguments.FirstOrDefault());
             return command;
         }
     }

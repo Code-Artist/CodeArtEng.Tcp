@@ -45,9 +45,9 @@ namespace CodeArtEng.Tcp.Tests
             return true;
         }
 
-        public TcpAppInputCommand ExecutePluginCommand(string[] commandArguments)
+        public TcpAppInputCommand GetPluginCommand(string[] commandArguments)
         {
-            return TcpAppPlugin.ExecutePluginCommand(commandArguments);
+            return TcpAppPlugin.GetPluginCommand(commandArguments);
         }
 
         public void ShowHelp(TcpAppInputCommand sender)

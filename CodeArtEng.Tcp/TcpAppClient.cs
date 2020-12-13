@@ -85,7 +85,6 @@ namespace CodeArtEng.Tcp
                 SuspendDataReceivedEvent = true;
                 string commandKeyword = command.Split(' ').First();
 
-                //ToDo: TcpAppClient - Command Verification does not know about plugin, blocked plugin command!
                 //Verify command registered in function list, only active after Connect() sequence completed.
                 if (Initialized)
                 {
@@ -95,7 +94,7 @@ namespace CodeArtEng.Tcp
                         //Compare plugin object list
                         if (!PluginObjects.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
                         {
-                            RefreshPluginObjects(); //Get latest plugin objects from server
+                            RefreshPlugins(); //Get latest plugin objects from server
                             if (!PluginObjects.Contains(commandKeyword, StringComparer.InvariantCultureIgnoreCase))
                                 throw new TcpAppClientException("Invalid Command: " + commandKeyword); //Still no match, FAILED!
                         }
@@ -109,7 +108,6 @@ namespace CodeArtEng.Tcp
 
                 DateTime startTime = DateTime.Now;
                 while ((DateTime.Now - startTime).TotalMilliseconds < timeout)
-                //while(true)
                 {
                     string response = ReadString();
                     ResponseReceived?.Invoke(this, new TcpAppClientEventArgs(response));
@@ -117,7 +115,7 @@ namespace CodeArtEng.Tcp
                     {
                         string[] resultParams = response.Split(' ');
 
-                        //ToDo: Handle Busy Status?
+                        //BUSY and Queue statue handle by application
                         result.Status = (TcpAppCommandStatus)Enum.Parse(typeof(TcpAppCommandStatus), resultParams[0]);
                         if (resultParams.Length > 1) result.ReturnMessage = string.Join(" ", resultParams.Skip(1)).Trim(); //Remove trailing CRLF
                         return result;
@@ -180,7 +178,7 @@ namespace CodeArtEng.Tcp
                 if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Initialization failed! " + result.ReturnMessage);
                 Commands.AddRange(result.ReturnMessage.Split(' '));
 
-                RefreshPluginObjects();
+                RefreshPlugins();
                 Trace.WriteLine("TCP Application Connection Ready.");
                 Initialized = true;
             }
@@ -201,11 +199,11 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Read plugin objects created by Server's application
         /// </summary>
-        public void RefreshPluginObjects()
+        public void RefreshPlugins()
         {
             PluginObjects.Clear();
-            TcpAppCommandResult result = ExecuteTcpAppCommand("Objects?");
-            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to get plugin objects list from server! " + result.ReturnMessage);
+            TcpAppCommandResult result = ExecuteTcpAppCommand("Plugins?");
+            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to get plugins list from server! " + result.ReturnMessage);
             if (result.ReturnMessage.Equals("-NONE-")) return;
             PluginObjects.AddRange(result.ReturnMessage.Split('\r').Select(x => x.Split('(')[0].Trim()).ToArray());
         }

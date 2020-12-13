@@ -9,6 +9,30 @@ using System.Diagnostics;
 
 namespace CodeArtEng.Tcp.Tests
 {
+    internal class DummyPlugin : ITcpAppServerPlugin
+    {
+        public string PluginName { get; } = "Dummy";
+        public string PluginDescription { get; } = null;
+        public string Alias { get; set; } = "NoName";
+
+        public bool DisposeRequest()
+        {
+            throw new NotImplementedException();
+        }
+
+        public TcpAppInputCommand GetPluginCommand(string[] commandArguments)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ShowHelp(TcpAppInputCommand sender)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+
     [TestFixture]
     class TcpAppServerPluginTests
     {
@@ -40,7 +64,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void MathPluginSum()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject simplemath M1");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin simplemath M1");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             result = Client.ExecuteCommand("M1 Sum 10 20 30 45");
             Assert.AreEqual("105", result.ReturnMessage);
@@ -51,7 +75,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppClient newClient = new TcpAppClient("127.0.0.1", 25000);
             newClient.Connect();
-            TcpAppCommandResult result = newClient.ExecuteCommand("CreateObject simplemath M2");
+            TcpAppCommandResult result = newClient.ExecuteCommand("CreatePlugin simplemath M2");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             Assert.Throws<TcpAppClientException>(() => { newClient.ExecuteCommand("M2 TimeoutSim"); });
         }
@@ -60,7 +84,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void StringPluginReplace()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject simplestring S1");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin simplestring S1");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             result = Client.ExecuteCommand("Execute S1 Replace \"Hell Of World\"  \"l Of \"  \"lo \"");
             Assert.AreEqual("Hello World", result.ReturnMessage);
@@ -78,44 +102,44 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void CreateInstance()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin MyPlugin1");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin MyPlugin1");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.NotNull(Server.PluginList.FirstOrDefault(x => x.Alias == "MyPlugin1"));
+            Assert.NotNull(Server.Plugins.FirstOrDefault(x => x.Alias == "MyPlugin1"));
         }
 
         [Test]
         public void CreateInstance_CaseInsensitive()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject sampleplugin MyPlugin2");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin sampleplugin MyPlugin2");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.NotNull(Server.PluginList.FirstOrDefault(x => x.Alias == "MyPlugin2"));
+            Assert.NotNull(Server.Plugins.FirstOrDefault(x => x.Alias == "MyPlugin2"));
         }
 
         [Test]
         public void DisposeInstance()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin MyPlugin3");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin MyPlugin3");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            result = Client.ExecuteCommand("DisposeObject MyPlugin3");
+            result = Client.ExecuteCommand("DisposePlugin MyPlugin3");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
         }
 
         [Test]
         public void DisposeInstance_CaseInsensitive()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin MyPlugin4");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin MyPlugin4");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Client.ExecuteCommand("disposeobject myplugin4");
-            result = Client.ExecuteCommand("Objects?");
+            Client.ExecuteCommand("disposeplugin myplugin4");
+            result = Client.ExecuteCommand("Plugins?");
             Assert.IsFalse(result.ReturnMessage.Contains("MyPlugin4"));
         }
 
         [Test]
         public void ObjectsList()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin MyPlugin4");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin MyPlugin4");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            result = Client.ExecuteCommand("Objects?");
+            result = Client.ExecuteCommand("Plugins?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             Assert.IsTrue(result.ReturnMessage.Contains("MyPlugin4"));
         }
@@ -123,14 +147,14 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void CreateInstanceInvalidType_ERROR()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject Plugin Plugin1");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin Plugin Plugin1");
             Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
         }
 
         [Test]
         public void CreateInstance_MissingArgument()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin");
             Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
         }
 
@@ -138,7 +162,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ExecutePluginCommand()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin X1");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin X1");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             result = Client.ExecuteCommand("Execute X1 PluginCommand1");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
@@ -148,7 +172,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ExceutePluginCommand_CaseInsensitive()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin PLUGIN_EXE");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin PLUGIN_EXE");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             result = Client.ExecuteCommand("Execute plugin_exe PluginCommand1");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
@@ -158,7 +182,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ExecutePluginCommand_CommandNotExist()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin X3");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin X3");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             result = Client.ExecuteCommand("Execute X2 UnknownCommand");
             Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
@@ -167,7 +191,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ExecutePluginCommand_ExtraParameter_Ignored()
         {
-            TcpAppCommandResult result = Client.ExecuteCommand("CreateObject SamplePlugin X2");
+            TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin X2");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             result = Client.ExecuteCommand("Execute X2 PluginCommand1 Value1 Value2");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
@@ -177,11 +201,24 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void AddPlugin()
         {
+            int count = Server.Plugins.Count;
             TcpAppServerSamplePlugin sample = new TcpAppServerSamplePlugin() { Alias = "Sample" };
             Server.AddPlugin(sample);
-            TcpAppCommandResult result = Client.ExecuteCommand("Objects?");
+            TcpAppCommandResult result = Client.ExecuteCommand("Plugins?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
             Assert.IsTrue(result.ReturnMessage.Contains("Sample"));
+
+            Server.DisposePlugin(sample);
+            Assert.AreEqual(count, Server.Plugins.Count);
         }
+
+        [Test]
+        public void AddPlugin_NonRegisteredType_Exception()
+        {
+            DummyPlugin dummy = new DummyPlugin();
+            Assert.Throws<ArgumentException>(() => { Server.AddPlugin(dummy); });
+        }
+
+
     }
 }

@@ -15,6 +15,8 @@ namespace CodeArtEng.Tcp.Tests
         public TcpAppClient Client;
         public TcpClient Tcp;
 
+        private readonly object LockObject = new object();
+
         [OneTimeSetUp]
         public void Setup()
         {
@@ -23,6 +25,28 @@ namespace CodeArtEng.Tcp.Tests
             Server.ClientSignedIn += Server_ClientSignedIn;
             Server.ClientSigningOut += Server_ClientSigningOut;
             Server.RegisterCommand("Custom_1", "Custom Command.", Custom1Callback);
+            Server.RegisterQueuedCommand("Delay", "Custom Delay", (TcpAppInputCommand sender) =>
+                {
+                    //Each connection execute command from different thread
+                    int delay = Convert.ToInt32(sender.Command.Parameter("duration").Value);
+                    //TestContext.Progress.WriteLine(sender.Command.Parameter("client").Value + " Sleep " + delay.ToString());
+                    Thread.Sleep(delay);
+                    sender.Status = TcpAppCommandStatus.OK;
+                    sender.OutputMessage = "Delay Tick";
+                },
+                TcpAppParameter.CreateParameter("client", "client name"),
+                TcpAppParameter.CreateParameter("duration", "Duration in ms"));
+            Server.RegisterCommand("DelayNoQueue", "Custom Delay", (TcpAppInputCommand sender) =>
+            {
+                //Each connection execute command from different thread
+                int delay = Convert.ToInt32(sender.Command.Parameter("duration").Value);
+                //TestContext.Progress.WriteLine(sender.Command.Parameter("client").Value + " Sleep " + delay.ToString());
+                Thread.Sleep(delay);
+                sender.Status = TcpAppCommandStatus.OK;
+                sender.OutputMessage = "MAIN";
+            },
+                TcpAppParameter.CreateParameter("client", "client name"),
+                TcpAppParameter.CreateParameter("duration", "Duration in ms"));
             Server.RegisterPluginType(typeof(TcpAppServerSimpleMath));
 
             Client = new TcpAppClient("localhost", 25000);
@@ -87,6 +111,64 @@ namespace CodeArtEng.Tcp.Tests
         {
             Client.Connect();
             CheckResult(Client.ExecuteCommand("Help"));
+        }
+
+        [Test]
+        public void DualClientCommandTests()
+        {
+            Thread TClient2 = new Thread(Client2Execution);
+            Thread TClient3 = new Thread(Client3Execution);
+            try
+            {
+                Client.Connect();
+                TClient2.Start();
+                //TClient3.Start();
+                for (int x = 0; x < 15; x++)
+                {
+                    Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 900").Status == TcpAppCommandStatus.OK);
+                }
+            }
+            finally
+            {
+                Client.Disconnect();
+                TClient2.Abort();
+                //TClient3.Abort();
+            }
+        }
+
+        public void Client2Execution()
+        {
+            TcpAppClient client = new TcpAppClient("localhost", 25000);
+            client.Connect();
+            for (int x = 0; x < 10; x++)
+            {
+                if (client.ExecuteCommand("Delay C2 800").Status == TcpAppCommandStatus.ERR)
+                {
+                    TestContext.Progress.WriteLine("C2 Terminated on Error!");
+                    Assert.Fail();
+                    break;
+                }
+            }
+            while (true) { client.ExecuteCommand("CheckStatus"); Thread.Sleep(5000); }
+            client.Disconnect();
+            client.Dispose();
+        }
+
+        public void Client3Execution()
+        {
+            TcpAppClient client = new TcpAppClient("localhost", 25000);
+            client.Connect();
+            for (int x = 0; x < 10; x++)
+            {
+                if (client.ExecuteCommand("Delay C3 900").Status == TcpAppCommandStatus.ERR)
+                {
+                    TestContext.Progress.WriteLine("C3 Terminated on Error!");
+                    Assert.Fail();
+                    break;
+                }
+            }
+            client.Disconnect();
+            client.Dispose();
         }
 
     }

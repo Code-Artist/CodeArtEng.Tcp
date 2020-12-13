@@ -9,6 +9,10 @@ namespace CodeArtEng.Tcp
     public class TcpAppInputCommand
     {
         /// <summary>
+        /// Unique ID
+        /// </summary>
+        public int ID { get; set; }
+        /// <summary>
         /// Command Handler
         /// </summary>
         public TcpAppCommand Command { get; set; }

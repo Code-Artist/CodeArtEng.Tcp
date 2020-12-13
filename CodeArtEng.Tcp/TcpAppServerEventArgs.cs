@@ -20,5 +20,9 @@ namespace CodeArtEng.Tcp
         /// Client connection which triggered this event
         /// </summary>
         public TcpAppServerConnection Client { get; private set; }
+        /// <summary>
+        /// Object associated with this event.
+        /// </summary>
+        public object Object { get; set; }
     }
 }

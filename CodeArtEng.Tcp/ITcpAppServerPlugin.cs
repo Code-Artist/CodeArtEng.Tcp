@@ -31,7 +31,7 @@ namespace CodeArtEng.Tcp
         /// Execute TCP Application Command for Plugin.
         /// </summary>
         /// <param name="commandArguments">Command and arguments in string array form</param>
-        TcpAppInputCommand ExecutePluginCommand(string [] commandArguments);
+        TcpAppInputCommand GetPluginCommand(string [] commandArguments);
 
         /// <summary>
         /// TcpAppServer request to dispose object. 
