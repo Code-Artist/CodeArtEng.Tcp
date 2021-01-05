@@ -168,7 +168,7 @@ namespace CodeArtEng.Tcp
                     ClientDisconnected?.Invoke(this, null);
                     return;
                 }
-
+                
                 int byteRead = TcpStream.EndRead(result);
                 if (byteRead == 0)
                 {

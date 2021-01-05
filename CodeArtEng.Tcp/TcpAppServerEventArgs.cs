@@ -7,6 +7,27 @@ using System.Threading.Tasks;
 namespace CodeArtEng.Tcp
 {
     /// <summary>
+    /// Extended TCP Application Server Event Parameters with <see cref="Cancel"/> option.
+    /// </summary>
+    public class TcpAppServerExEventArgs : TcpAppServerEventArgs
+    {
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="sender"></param>
+        public TcpAppServerExEventArgs(TcpAppServerConnection sender) : base(sender) { }
+
+        /// <summary>
+        /// Default is false, set to true to cancel command execution.
+        /// </summary>
+        public bool Cancel { get; set; } = false;
+        /// <summary>
+        /// Cancellation reason
+        /// </summary>
+        public string Reason { get; set; } = "Command rejected by server!";
+    }
+
+    /// <summary>
     /// TCP Application Server Event Parameters
     /// </summary>
     public class TcpAppServerEventArgs : EventArgs
@@ -21,8 +42,12 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public TcpAppServerConnection Client { get; private set; }
         /// <summary>
-        /// Object associated with this event.
+        /// Plugin 
         /// </summary>
-        public object Object { get; set; }
+        public ITcpAppServerPlugin Plugin { get; set; }
+        /// <summary>
+        /// Misc properties to store additional information of event
+        /// </summary>
+        public object Value { get; set; }
     }
 }

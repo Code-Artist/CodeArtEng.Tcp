@@ -189,8 +189,11 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public override void Disconnect()
         {
-            TcpAppCommandResult result = ExecuteTcpAppCommand("SignOut");
-            if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to SignOut client! " + result.ReturnMessage);
+            if (base.Connected)
+            {
+                TcpAppCommandResult result = ExecuteTcpAppCommand("SignOut");
+                if (result.Status == TcpAppCommandStatus.ERR) throw new TcpAppClientException("Failed to SignOut client! " + result.ReturnMessage);
+            }
             ConnectionID = string.Empty;
             Initialized = false;
             base.Disconnect();

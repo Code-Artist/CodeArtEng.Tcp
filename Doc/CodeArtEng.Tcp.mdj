@@ -8609,8 +8609,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 702,
-											"top": 1120,
+											"left": 686,
+											"top": 1184,
 											"height": 13
 										},
 										{
@@ -8620,8 +8620,8 @@
 												"$ref": "AAAAAAF2QqoHKWFjmfo="
 											},
 											"font": "Arial;13;1",
-											"left": 581,
-											"top": 839,
+											"left": 573,
+											"top": 871,
 											"width": 187.4697265625,
 											"height": 13,
 											"text": "TcpAppInputCommand"
@@ -8634,8 +8634,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 702,
-											"top": 1120,
+											"left": 686,
+											"top": 1184,
 											"width": 59.94091796875,
 											"height": 13,
 											"text": "(from Tcp)"
@@ -8648,15 +8648,15 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 702,
-											"top": 1120,
+											"left": 686,
+											"top": 1184,
 											"height": 13,
 											"horizontalAlignment": 1
 										}
 									],
 									"font": "Arial;13;0",
-									"left": 576,
-									"top": 832,
+									"left": 568,
+									"top": 864,
 									"width": 197.4697265625,
 									"height": 25,
 									"stereotypeLabel": {
@@ -8693,8 +8693,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 693,
-											"top": 886,
+											"left": 677,
+											"top": 950,
 											"width": 195.4697265625,
 											"height": 13,
 											"text": "+Command: TcpAppCommand",
@@ -8711,8 +8711,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 693,
-											"top": 901,
+											"left": 677,
+											"top": 965,
 											"width": 195.4697265625,
 											"height": 13,
 											"text": "+OutputMessage",
@@ -8729,8 +8729,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 693,
-											"top": 916,
+											"left": 677,
+											"top": 980,
 											"width": 195.4697265625,
 											"height": 13,
 											"text": "+Arguments: string[*]",
@@ -8747,8 +8747,8 @@
 											},
 											"visible": false,
 											"font": "Arial;13;0",
-											"left": 693,
-											"top": 931,
+											"left": 677,
+											"top": 995,
 											"width": 195.4697265625,
 											"height": 13,
 											"text": "+Client: TcpAppServerConnection",
@@ -8757,8 +8757,8 @@
 									],
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 568,
-									"top": 857,
+									"left": 560,
+									"top": 889,
 									"width": 205.4697265625,
 									"height": 10
 								},
@@ -8773,8 +8773,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 568,
-									"top": 857,
+									"left": 560,
+									"top": 889,
 									"width": 205.4697265625,
 									"height": 10
 								},
@@ -8789,8 +8789,8 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 320,
-									"top": 736,
+									"left": 312,
+									"top": 768,
 									"width": 10,
 									"height": 10
 								},
@@ -8805,16 +8805,16 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 320,
-									"top": 736,
+									"left": 312,
+									"top": 768,
 									"width": 10,
 									"height": 10
 								}
 							],
 							"font": "Arial;13;0",
 							"containerChangeable": true,
-							"left": 576,
-							"top": 832,
+							"left": 568,
+							"top": 864,
 							"width": 197.4697265625,
 							"height": 41,
 							"nameCompartment": {
@@ -8856,15 +8856,17 @@
 									},
 									"visible": false,
 									"font": "Arial;13;0",
-									"left": 746,
-									"top": 796,
+									"left": 715,
+									"top": 812,
+									"width": 63.958984375,
 									"height": 13,
 									"alpha": 1.5707963267948966,
 									"distance": 15,
 									"hostEdge": {
 										"$ref": "AAAAAAF2QqpC82Sx2ps="
 									},
-									"edgePosition": 1
+									"edgePosition": 1,
+									"text": "+AppClient"
 								},
 								{
 									"_type": "EdgeLabelView",
@@ -8878,7 +8880,7 @@
 									"visible": null,
 									"font": "Arial;13;0",
 									"left": 761,
-									"top": 796,
+									"top": 812,
 									"height": 13,
 									"alpha": 1.5707963267948966,
 									"distance": 30,
@@ -8899,7 +8901,7 @@
 									"visible": false,
 									"font": "Arial;13;0",
 									"left": 717,
-									"top": 797,
+									"top": 813,
 									"height": 13,
 									"alpha": -1.5707963267948966,
 									"distance": 15,
@@ -8917,17 +8919,18 @@
 									"model": {
 										"$ref": "AAAAAAF2QqpC82SuKSg="
 									},
-									"visible": false,
 									"font": "Arial;13;0",
-									"left": 747,
-									"top": 793,
+									"left": 582,
+									"top": 783,
+									"width": 144.16796875,
 									"height": 13,
-									"alpha": 0.5235987755982988,
-									"distance": 30,
+									"alpha": -1.365919694999858,
+									"distance": 78.64477096412705,
 									"hostEdge": {
 										"$ref": "AAAAAAF2QqpC82Sx2ps="
 									},
-									"edgePosition": 2
+									"edgePosition": 2,
+									"text": "+NexeQueuedCommand"
 								},
 								{
 									"_type": "EdgeLabelView",
@@ -8980,16 +8983,17 @@
 									"model": {
 										"$ref": "AAAAAAF2QqpC82SvRK8="
 									},
-									"visible": false,
 									"font": "Arial;13;0",
-									"left": 747,
-									"top": 800,
+									"left": 663,
+									"top": 848,
+									"width": 63.958984375,
 									"height": 13,
-									"alpha": -0.5235987755982988,
-									"distance": 30,
+									"alpha": -4.97635266097282,
+									"distance": 38.3275357934736,
 									"hostEdge": {
 										"$ref": "AAAAAAF2QqpC82Sx2ps="
-									}
+									},
+									"text": "+AppClient"
 								},
 								{
 									"_type": "EdgeLabelView",
@@ -9003,7 +9007,7 @@
 									"visible": false,
 									"font": "Arial;13;0",
 									"left": 760,
-									"top": 797,
+									"top": 829,
 									"height": 13,
 									"alpha": -0.7853981633974483,
 									"distance": 40,
@@ -9023,7 +9027,7 @@
 									"visible": false,
 									"font": "Arial;13;0",
 									"left": 719,
-									"top": 804,
+									"top": 836,
 									"height": 13,
 									"alpha": 0.5235987755982988,
 									"distance": 25,
@@ -9067,7 +9071,7 @@
 							"tail": {
 								"$ref": "AAAAAAF0u19/oLTVhtU="
 							},
-							"points": "732:774;732:832",
+							"points": "732:774;732:864",
 							"showVisibility": true,
 							"nameLabel": {
 								"$ref": "AAAAAAF2QqpC82Sy+gw="
@@ -15424,6 +15428,7 @@
 								"_parent": {
 									"$ref": "AAAAAAF2QqpC82StMdg="
 								},
+								"name": "NexeQueuedCommand",
 								"reference": {
 									"$ref": "AAAAAAF0u19/n7TTW/A="
 								}
@@ -15434,6 +15439,7 @@
 								"_parent": {
 									"$ref": "AAAAAAF2QqpC82StMdg="
 								},
+								"name": "AppClient",
 								"reference": {
 									"$ref": "AAAAAAFhx8pY060H494="
 								}

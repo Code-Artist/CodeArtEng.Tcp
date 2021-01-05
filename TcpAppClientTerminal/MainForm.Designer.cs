@@ -49,9 +49,9 @@
             this.PnSendCommand.Controls.Add(this.CbFunctions);
             this.PnSendCommand.Controls.Add(this.BtSend);
             this.PnSendCommand.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.PnSendCommand.Location = new System.Drawing.Point(0, 428);
+            this.PnSendCommand.Location = new System.Drawing.Point(0, 685);
             this.PnSendCommand.Name = "PnSendCommand";
-            this.PnSendCommand.Size = new System.Drawing.Size(901, 30);
+            this.PnSendCommand.Size = new System.Drawing.Size(1421, 30);
             this.PnSendCommand.TabIndex = 0;
             // 
             // CommandBox
@@ -61,7 +61,7 @@
             this.CommandBox.FormattingEnabled = true;
             this.CommandBox.Location = new System.Drawing.Point(202, 4);
             this.CommandBox.Name = "CommandBox";
-            this.CommandBox.Size = new System.Drawing.Size(613, 21);
+            this.CommandBox.Size = new System.Drawing.Size(1133, 21);
             this.CommandBox.TabIndex = 1;
             this.CommandBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.CommandBox_KeyDown);
             // 
@@ -77,7 +77,7 @@
             // BtSend
             // 
             this.BtSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BtSend.Location = new System.Drawing.Point(821, 3);
+            this.BtSend.Location = new System.Drawing.Point(1341, 3);
             this.BtSend.Name = "BtSend";
             this.BtSend.Size = new System.Drawing.Size(75, 22);
             this.BtSend.TabIndex = 2;
@@ -93,7 +93,7 @@
             this.TerminalOutput.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
             this.TerminalOutput.Location = new System.Drawing.Point(0, 32);
             this.TerminalOutput.Name = "TerminalOutput";
-            this.TerminalOutput.Size = new System.Drawing.Size(901, 396);
+            this.TerminalOutput.Size = new System.Drawing.Size(1421, 653);
             this.TerminalOutput.TabIndex = 1;
             this.TerminalOutput.Text = "Response Text";
             // 
@@ -151,14 +151,14 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(901, 32);
+            this.panel1.Size = new System.Drawing.Size(1421, 32);
             this.panel1.TabIndex = 4;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(901, 458);
+            this.ClientSize = new System.Drawing.Size(1421, 715);
             this.Controls.Add(this.TerminalOutput);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.PnSendCommand);

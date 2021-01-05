@@ -20,7 +20,11 @@ namespace CodeArtEng.Tcp
     {
         private long Counter = 0;
         /// <summary>
-        /// Occur when <see cref="TcpAppClient"/> executed TcpAppInit command successfully.
+        /// Occur when TcpAppClient is about to sign in. Subscribe this event to decide if a client is allowed to connect.
+        /// </summary>
+        public event EventHandler<TcpAppServerExEventArgs> ClientSigningIn;
+        /// <summary>
+        /// Occur when <see cref="TcpAppClient"/> signed in successfully.
         /// </summary>
         public event EventHandler<TcpAppServerEventArgs> ClientSignedIn;
         /// <summary>
@@ -35,6 +39,10 @@ namespace CodeArtEng.Tcp
         /// Occur when plugin object is disposed. This event only triggered by TCP App Command.
         /// </summary>
         public event EventHandler<TcpAppServerEventArgs> PluginDisposed;
+        /// <summary>
+        /// Occur before plugin command is executed. Override this event to control if a plugin command is allowed to be executed.
+        /// </summary>
+        public event EventHandler<TcpAppServerExEventArgs> BeforeExecutePluginCommand;
 
         /// <summary>
         /// <see cref="TcpAppClient"/> connected to server.
@@ -80,6 +88,8 @@ namespace CodeArtEng.Tcp
 
             //Register System Commands
             //--- INIT (Commands used by TcpAppClient) ---
+            RegisterSystemCommand("Help", "Show help screen. Include plugin type or object alias name to show commands for selected plugin.", ShowHelp,
+                TcpAppParameter.CreateOptionalParameter("Plugin", "Plugin type or Alias", "-"));
             RegisterSystemCommand("SignIn", "Sign in to TcpAppServer. Server will verify connection id and return unique ID.", delegate (TcpAppInputCommand sender)
                 {
                     //Assign Name
@@ -96,6 +106,16 @@ namespace CodeArtEng.Tcp
                             return;
                         }
                         else sender.AppClient.SignedIn = false;
+                    }
+
+                    TcpAppServerExEventArgs signInArg = new TcpAppServerExEventArgs(sender.AppClient) { Value = machineName } ;
+                    ClientSigningIn?.Invoke(this, signInArg);
+                    if(signInArg.Cancel == true)
+                    {
+                        sender.OutputMessage = signInArg.Reason;
+                        if (string.IsNullOrEmpty(sender.OutputMessage)) sender.OutputMessage = "Access Denied!";
+                        sender.Status = TcpAppCommandStatus.ERR;
+                        return;
                     }
 
                     string uniqueName = machineName;
@@ -138,17 +158,6 @@ namespace CodeArtEng.Tcp
                     sender.OutputMessage = Version.ToString();
                     sender.Status = TcpAppCommandStatus.OK;
                 });
-            RegisterSystemCommand("Help", "Show help screen. Include plugin type or object alias name to show commands for selected plugin.", ShowHelp,
-                TcpAppParameter.CreateOptionalParameter("Plugin", "Plugin type or Alias", "-"));
-            RegisterSystemCommand("FunctionList?", "Get list of registered functions.", delegate (TcpAppInputCommand sender)
-                {
-                    foreach (TcpAppCommand x in Commands)
-                    {
-                        sender.OutputMessage += x.Keyword;
-                        sender.OutputMessage += " ";
-                    }
-                    sender.Status = TcpAppCommandStatus.OK;
-                });
             RegisterSystemCommand("ApplicationName?", "Get Application Name.", delegate (TcpAppInputCommand sender)
             {
                 sender.OutputMessage = Application.ProductName;
@@ -175,6 +184,41 @@ namespace CodeArtEng.Tcp
                 ptrThread.Start();
             },
                 TcpAppParameter.CreateOptionalParameter("ExitCode", "Assign Exit Code for application termination.", "-99"));
+
+            //--- Execution ---
+            RegisterSystemCommand("FunctionList?", "Get list of registered functions.", delegate (TcpAppInputCommand sender)
+            {
+                foreach (TcpAppCommand x in Commands)
+                {
+                    sender.OutputMessage += x.Keyword;
+                    sender.OutputMessage += " ";
+                }
+                sender.Status = TcpAppCommandStatus.OK;
+            });
+            RegisterSystemCommand("Execute", "Execute plugin's command. Command only valid after client Signin.", delegate (TcpAppInputCommand sender)
+            {
+                VerifyUserSignedIn(sender);
+                ITcpAppServerPlugin plugin = _Plugins.FirstOrDefault(x => string.Compare(x.Alias, sender.Command.Parameter("Alias").Value, true) == 0);
+                if (plugin == null) throw new ArgumentException("Plugin not exists!");
+
+                TcpAppInputCommand pluginCommand = plugin.GetPluginCommand(sender.Arguments.Skip(1).ToArray());
+                TcpAppServerExEventArgs pluginExecuteEventArgs = new TcpAppServerExEventArgs(sender.AppClient) { Plugin = plugin };
+                BeforeExecutePluginCommand?.Invoke(this, pluginExecuteEventArgs);
+                if (pluginExecuteEventArgs.Cancel)
+                {
+                    //Command execution cancelled by server, return error with reason.
+                    sender.Status = TcpAppCommandStatus.ERR;
+                    sender.OutputMessage = pluginExecuteEventArgs.Reason;
+                }
+                else
+                {
+                    //Proceed with execution.
+                    pluginCommand.ExecuteCallback();
+                    sender.Status = pluginCommand.Status;
+                    sender.OutputMessage = pluginCommand.OutputMessage;
+                }
+            },
+                TcpAppParameter.CreateParameter("Alias", "Plugin Alias Name."));
             RegisterSystemCommand("CheckStatus", "Check execution status for queued command. RETURN: Command status if executed, else BUSY. ERR if no queued message.",
                 delegate (TcpAppInputCommand sender)
                 {
@@ -247,6 +291,7 @@ namespace CodeArtEng.Tcp
                 TcpAppParameter.CreateOptionalParameter("QueueID", "Get status of specific message.", "0"));
             RegisterSystemCommand("Abort", "Abort last queued command.", delegate (TcpAppInputCommand sender)
             {
+                VerifyUserSignedIn(sender);
                 if (sender.AppClient.NextQueuedCommand != null)
                 {
                     lock (CommandQueue)
@@ -260,19 +305,23 @@ namespace CodeArtEng.Tcp
             });
             RegisterSystemCommand("FlushQueue", "Flush message queue for calling client.", delegate (TcpAppInputCommand sender)
                 {
+                    VerifyUserSignedIn(sender);
                     lock (CommandQueue)
                     {
                         CommandQueue.RemoveAll(x => x.AppClient == sender.AppClient);
                         ResultQueue.RemoveAll(x => x.AppClient == sender.AppClient);
+                        sender.AppClient.NextQueuedCommand = null;
                     }
                     sender.Status = TcpAppCommandStatus.OK;
                 });
-            RegisterSystemCommand("FlushAlLQueue", "Flush message queue for all clients.", delegate (TcpAppInputCommand sender)
+            RegisterSystemCommand("FlushAllQueue", "Flush message queue for all clients.", delegate (TcpAppInputCommand sender)
                 {
+                    VerifyUserSignedIn(sender);
                     lock (CommandQueue)
                     {
                         CommandQueue.Clear();
                         ResultQueue.Clear();
+                        foreach (TcpAppServerConnection client in AppClients) client.NextQueuedCommand = null;
                     }
                     sender.Status = TcpAppCommandStatus.OK;
                 });
@@ -314,7 +363,7 @@ namespace CodeArtEng.Tcp
                         ITcpAppServerPlugin pluginInstance = Activator.CreateInstance(pluginType) as ITcpAppServerPlugin;
                         pluginInstance.Alias = aliasName;
                         _Plugins.Add(pluginInstance);
-                        PluginCreated?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient) { Object = pluginInstance });
+                        PluginCreated?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient) { Plugin = pluginInstance });
                         sender.OutputMessage += " " + aliasName;
                     }
                     sender.Status = TcpAppCommandStatus.OK;
@@ -327,18 +376,6 @@ namespace CodeArtEng.Tcp
                     else sender.OutputMessage = string.Join(TcpAppCommon.NewLine, _Plugins.Select(x => x.Alias + "(" + PluginTypes.FirstOrDefault(n => n.Type == x.GetType())?.Name + ")").ToArray());
                     sender.Status = TcpAppCommandStatus.OK;
                 });
-            RegisterSystemCommand("Execute", "Execute plugin's command. Command only valid after client Signin.", delegate (TcpAppInputCommand sender)
-                {
-                    VerifyUserSignedIn(sender);
-                    ITcpAppServerPlugin plugin = _Plugins.FirstOrDefault(x => string.Compare(x.Alias, sender.Command.Parameter("Alias").Value, true) == 0);
-                    if (plugin == null) throw new ArgumentException("Plugin not exists!");
-
-                    TcpAppInputCommand pluginCommand = plugin.GetPluginCommand(sender.Arguments.Skip(1).ToArray());
-                    pluginCommand.ExecuteCallback();
-                    sender.Status = pluginCommand.Status;
-                    sender.OutputMessage = pluginCommand.OutputMessage;
-                },
-                TcpAppParameter.CreateParameter("Alias", "Plugin Alias Name."));
             RegisterSystemCommand("DisposePlugin", "Delete plugin by alias name. Command only valid after client Signin.", delegate (TcpAppInputCommand sender)
                 {
                     VerifyUserSignedIn(sender);
@@ -354,7 +391,7 @@ namespace CodeArtEng.Tcp
                         if (item.DisposeRequest() == true)
                         {
                             _Plugins.Remove(item);
-                            PluginDisposed?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient) { Object = item });
+                            PluginDisposed?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient) { Plugin = item });
                             sender.OutputMessage = alias + " disposed.";
                             sender.Status = TcpAppCommandStatus.OK;
                         }
@@ -366,6 +403,8 @@ namespace CodeArtEng.Tcp
                     }
                 },
                 TcpAppParameter.CreateParameter("Alias", "Plugin alias name."));
+
+
         }
 
         private void VerifyUserSignedIn(TcpAppInputCommand command)
@@ -604,8 +643,21 @@ namespace CodeArtEng.Tcp
             string[] cmdArg = TcpAppCommon.ParseCommand(message.Trim());
             try
             {
+                //Register Client Connection
+                TcpAppServerConnection ptrClient = AppClients.FirstOrDefault(x => x.Connection == client);
+                if (ptrClient == null)
+                {
+                    //Reconstruct device which had already signed out
+                    ptrClient = AddClientToAppClientsList(client);
+                }
+
                 TcpAppInputCommand inputCommand = TcpAppCommon.CreateInputCommand(Commands, cmdArg);
-                if (inputCommand == null) //Command keyword not exist
+                if (inputCommand != null)
+                {
+                    inputCommand.AppClient = ptrClient;
+
+                }
+                else//Command keyword not exist
                 {
                     //Check if command keyword is alias name
                     ITcpAppServerPlugin plugin = _Plugins.FirstOrDefault(x => string.Compare(x.Alias, cmdArg[0], true) == 0);
@@ -613,6 +665,8 @@ namespace CodeArtEng.Tcp
                     {
                         //Execute plugin command
                         inputCommand = plugin.GetPluginCommand(cmdArg.Skip(1).ToArray());
+                        inputCommand.AppClient = ptrClient;
+                        BeforeExecutePluginCommand?.Invoke(this, new TcpAppServerExEventArgs(ptrClient) { Plugin = plugin });
                     }
                     else
                     {
@@ -622,15 +676,6 @@ namespace CodeArtEng.Tcp
                         return;
                     }
                 }
-
-                //Register Client Connection
-                TcpAppServerConnection ptrClient = AppClients.FirstOrDefault(x => x.Connection == client);
-                if (ptrClient == null)
-                {
-                    //Reconstruct device which had already signed out
-                    ptrClient = AddClientToAppClientsList(client);
-                }
-                inputCommand.AppClient = ptrClient;
 
                 //Verify Client had signed in.
                 if (!inputCommand.AppClient.SignedIn && !inputCommand.Command.IsSystemCommand)
@@ -685,12 +730,15 @@ namespace CodeArtEng.Tcp
                 }
             }
         }
+        /// <summary>
+        /// /Dispose object - Abort Command Queu Execution Thread.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             CommandQueueThread.Abort();
             base.Dispose(disposing);
         }
-
 
         private void WriteResultToClient(TcpServerConnection client, TcpAppInputCommand input)
         {

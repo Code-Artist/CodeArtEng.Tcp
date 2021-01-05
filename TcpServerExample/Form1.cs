@@ -35,6 +35,7 @@ namespace TcpServerExample
             AppServer.ClientDisconnected += AppServer_ClientDisconnected;
             AppServer.ClientSignedIn += AppServer_ClientInitialized;
             AppServer.ClientSigningOut += AppServer_ClientSigningOut;
+            tcpClientsList1.AssignObject(AppServer);
 
             //TCP Application Server Customization Test
             AppServer.RegisterCommand("CustomFunction", "Dummy Custom Function", customFunctionCallback);
@@ -227,12 +228,10 @@ namespace TcpServerExample
 
         private void AppServer_ClientInitialized(object sender, TcpAppServerEventArgs e)
         {
-            RefreshClientList();
         }
 
         private void AppServer_ClientSigningOut(object sender, TcpAppServerEventArgs e)
         {
-            RefreshClientList();
         }
 
         private void AppServer_ClientConnected(object sender, TcpServerEventArgs e)
@@ -255,19 +254,6 @@ namespace TcpServerExample
                 return;
             }
             LogInfo(tcpAppServerLog, "Client Disconnected: " + e.Client.ClientIPAddress);
-            RefreshClientList();
-        }
-
-        private void RefreshClientList()
-        {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new MethodInvoker(RefreshClientList));
-                return;
-            }
-            LstClients.Items.Clear();
-            LstClients.Items.AddRange(AppServer.AppClients.Select(x => x.Name + " @ " + x.Connection.ClientIPAddress.ToString() + " (" +
-                (x.Connection.Connected ? "Connected" : "Disconnect") + ")").ToArray());
         }
 
         private void Form1_Shown(object sender, EventArgs e)

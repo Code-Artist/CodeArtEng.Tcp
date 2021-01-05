@@ -170,6 +170,30 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         [Test]
+        public void ExecutePluginCommand_Cancel()
+        {
+            Server.BeforeExecutePluginCommand += Server_BeforeExecutePluginCommand;
+            try
+            {
+                TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin Z1");
+                Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+                result = Client.ExecuteCommand("Execute Z1 PluginCommand1");
+                Assert.AreEqual(TcpAppCommandStatus.ERR, result.Status);
+                Assert.AreEqual("Abort by UnitTest!", result.ReturnMessage);
+            }
+            finally
+            {
+                Server.BeforeExecutePluginCommand -= Server_BeforeExecutePluginCommand;
+            }
+        }
+
+        private void Server_BeforeExecutePluginCommand(object sender, TcpAppServerExEventArgs e)
+        {
+            e.Cancel = true;
+            e.Reason = "Abort by UnitTest!";
+        }
+
+        [Test]
         public void ExceutePluginCommand_CaseInsensitive()
         {
             TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin SamplePlugin PLUGIN_EXE");

@@ -64,6 +64,12 @@
     <Compile Include="TcpAppServerPlugin.cs" />
     <Compile Include="TcpClient.cs" />
     <Compile Include="TcpClientExtension.cs" />
+    <Compile Include="TcpClientsList.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TcpClientsList.Designer.cs">
+      <DependentUpon>TcpClientsList.cs</DependentUpon>
+    </Compile>
     <Compile Include="TcpDataReceivedEventArgs.cs" />
     <Compile Include="TcpServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -71,6 +77,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TcpClientsList.resx">
+      <DependentUpon>TcpClientsList.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\NuPack.3.4.2\build\NuPack.targets" Condition="Exists('..\packages\NuPack.3.4.2\build\NuPack.targets')" />

@@ -26,9 +26,18 @@ namespace CodeArtEng.Tcp.Tests
                     sender.Status = TcpAppCommandStatus.OK;
                     sender.OutputMessage = "Command 1 Executed!";
                 });
-            TcpAppPlugin.RegisterQueuedCommand("LongDelay", "10s Delay", delegate (TcpAppInputCommand sender) { 
+            TcpAppPlugin.RegisterQueuedCommand("LongDelay", "10s Delay", delegate (TcpAppInputCommand sender)
+            {
                 System.Threading.Thread.Sleep(10000);
                 sender.Status = TcpAppCommandStatus.OK;
+            });
+            TcpAppPlugin.RegisterCommand("InfiniteLoop", "Infinite Loop Command", delegate (TcpAppInputCommand sender)
+            {
+                while (true) { System.Threading.Thread.Sleep(1000); }
+            });
+            TcpAppPlugin.RegisterQueuedCommand("InfiniteLoopQueue", "Infinite Loop Queue", delegate (TcpAppInputCommand sender)
+            {
+                while (true) { System.Threading.Thread.Sleep(1000); }
             });
         }
 

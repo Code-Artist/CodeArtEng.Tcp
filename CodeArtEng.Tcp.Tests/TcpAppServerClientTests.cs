@@ -49,9 +49,11 @@ namespace CodeArtEng.Tcp.Tests
                 TcpAppParameter.CreateParameter("duration", "Duration in ms"));
             Server.RegisterPluginType(typeof(TcpAppServerSimpleMath));
 
+
             Client = new TcpAppClient("localhost", 25000);
             Tcp = new TcpClient("localhost", 25000);
         }
+
 
         [OneTimeTearDown]
         public void Finalize()
@@ -88,11 +90,38 @@ namespace CodeArtEng.Tcp.Tests
         public void SignIn()
         {
             SignedIn = SignedOut = false;
+            Client.Disconnect(); //This function should not throw exception
             Client.Connect();
             Assert.AreEqual(true, SignedIn);
             Thread.Sleep(10);
             Client.Disconnect();
             Assert.AreEqual(true, SignedOut);
+        }
+
+        private void Server_ClientSigningIn(object sender, TcpAppServerExEventArgs e)
+        {
+            Assert.IsFalse(string.IsNullOrEmpty(e.Value.ToString()));
+            e.Cancel = true;
+        }
+
+        [Test]
+        public void SignInAccessDenied()
+        {
+            Server.ClientSigningIn += Server_ClientSigningIn;
+            try
+            {
+                Assert.Throws<TcpAppClientException>(() =>
+                {
+                    Client.Connect();
+                });
+                Thread.Sleep(10);
+                Client.Disconnect();
+
+            }
+            finally
+            {
+                Server.ClientSignedIn -= Server_ClientSignedIn;
+            }
         }
 
         [Test]
@@ -111,6 +140,13 @@ namespace CodeArtEng.Tcp.Tests
         {
             Client.Connect();
             CheckResult(Client.ExecuteCommand("Help"));
+        }
+
+        [Test]
+        public void ExecuteSystemCommand_NotSignedIn_Error()
+        {
+            Client.Connect();
+            CheckResult(Client.ExecuteCommand("FlushQueue"));
         }
 
         [Test]
