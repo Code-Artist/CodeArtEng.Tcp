@@ -51,7 +51,7 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// TCP Port to listen for incoming connection.
         /// </summary>
-        public int Port { get; private set; }
+        public int Port { get; protected set; }
         /// <summary>
         /// Check if Server is started.
         /// </summary>

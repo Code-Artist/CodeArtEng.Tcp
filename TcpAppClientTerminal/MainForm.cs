@@ -13,29 +13,55 @@ namespace TcpAppClientTerminal
 {
     public partial class MainForm : Form
     {
-        private TcpAppClient Client;
+        private TcpAppClient AppClient;
+        private TcpClient TcpClient;
+        private TcpClient ptrClient;
 
         public MainForm()
         {
             InitializeComponent();
             PnSendCommand.Enabled = false;
 
-            Client = new TcpAppClient();
-            Client.ConnectionStatusChanged += Client_ConnectionStatusChanged;
-            Client.ResponseReceived += Client_ResponseReceived;
-            Client.CommandSend += Client_CommandSend;
-            
+            AppClient = new TcpAppClient();
+            AppClient.ConnectionStatusChanged += Client_ConnectionStatusChanged;
+            AppClient.ResponseReceived += Client_ResponseReceived;
+            AppClient.CommandSend += Client_CommandSend;
+
+            TcpClient = new TcpClient();
+            TcpClient.ConnectionStatusChanged += Client_ConnectionStatusChanged;
+            TcpClient.DataReceived += TcpClient_DataReceived;
+
+            CbClientType.SelectedIndex = 0;
             TerminalOutput.Clear();
+        }
+        private void CbClientType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch (CbClientType.SelectedIndex)
+            {
+                case 0: ptrClient = AppClient; break;
+                case 1: ptrClient = TcpClient; break;
+                default: throw new NotSupportedException("Not supported type!");
+            }
+            TxtTimeout.Enabled = (ptrClient == AppClient);
+            ClientProperty.SelectedObject = ptrClient;
+        }
+
+        private void TcpClient_DataReceived(object sender, TcpDataReceivedEventArgs e)
+        {
+            AppendOutput(e.GetString(), Color.Lime);
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Client.Dispose(); Client = null;
+            ptrClient = null;
+            AppClient.Dispose(); AppClient = null;
+            TcpClient.Dispose(); TcpClient = null;
         }
 
         private void Client_CommandSend(object sender, TcpAppClientEventArgs e)
         {
             AppendOutput(e.Message + "\n", Color.Yellow);
+            Application.DoEvents();
         }
 
         private void Client_ResponseReceived(object sender, TcpAppClientEventArgs e)
@@ -56,8 +82,8 @@ namespace TcpAppClientTerminal
 
         private void Client_ConnectionStatusChanged(object sender, EventArgs e)
         {
-            if (Client == null) return;
-            if (Client.Connected)
+            if (ptrClient == null) return;
+            if (ptrClient.Connected)
             {
                 this.BeginInvoke(new MethodInvoker(ClientConnected));
             }
@@ -72,6 +98,7 @@ namespace TcpAppClientTerminal
             TxtHostName.Enabled = TxtPort.Enabled = false;
             PnSendCommand.Enabled = true;
             BtConnect.Text = "Disconnect";
+            CbClientType.Enabled = false;
         }
 
         private void ClientDisconnected()
@@ -79,24 +106,27 @@ namespace TcpAppClientTerminal
             TxtHostName.Enabled = TxtPort.Enabled = true;
             PnSendCommand.Enabled = false;
             BtConnect.Text = "Connect";
+            CbClientType.Enabled = true;
         }
 
         private void BtConnect_Click(object sender, EventArgs e)
         {
-            if (Client.Connected)
+            if (ptrClient.Connected)
             {
-                Client.Disconnect();
+                ptrClient.Disconnect();
             }
             else
             {
-                Client.HostName = TxtHostName.Text;
-                Client.Port = Convert.ToInt32(TxtPort.Text);
-                Client.Connect();
+                ptrClient.HostName = TxtHostName.Text;
+                ptrClient.Port = Convert.ToInt32(TxtPort.Text);
+                ptrClient.Connect();
 
-                CbFunctions.Items.Clear();
-                CbFunctions.Items.Add("(NONE)");
-                CbFunctions.Items.AddRange(Client.Commands.ToArray());
-                CbFunctions.SelectedIndex = 0;
+                if (ptrClient is TcpAppClient)
+                {
+                    CommandBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
+                    CommandBox.AutoCompleteCustomSource.AddRange(AppClient.Commands.ToArray());
+                    CommandBox.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                }
             }
         }
 
@@ -105,18 +135,23 @@ namespace TcpAppClientTerminal
             try
             {
                 string command = string.Empty;
-                if (CbFunctions.SelectedIndex != 0) command = CbFunctions.SelectedItem.ToString();
-
                 if (!string.IsNullOrEmpty(CommandBox.Text))
                 {
                     if (!CommandBox.Items.Contains(CommandBox.Text)) CommandBox.Items.Add(CommandBox.Text);
-                    command += " " + CommandBox.Text;
+                    command = CommandBox.Text;
+                    if (ChkCRLF.Checked) command += "\r\n";
                 }
-                Client.ExecuteCommand(command.Trim(), 5000);
+                if (ptrClient == AppClient)
+                    AppClient.ExecuteCommand(command, Convert.ToInt32(TxtTimeout.Text));
+                else
+                {
+                    TcpClient.Write(command);
+                    AppendOutput(command, Color.FromArgb(224, 224, 224));
+                }
             }
             catch (Exception ex)
             {
-                AppendOutput("ERROR: " + ex.Message + "\r\n",  Color.Red);
+                AppendOutput("ERROR: " + ex.Message + "\r\n", Color.Red);
             }
 
         }
@@ -129,6 +164,51 @@ namespace TcpAppClientTerminal
         private void CommandBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Return) SendCommand();
+        }
+
+        private int id = 0;
+        private void BtAuto1_Click(object sender, EventArgs e)
+        {
+            Random r = new Random();
+            id = r.Next() % 1000;
+            int timeout = Convert.ToInt32(TxtTimeout.Text);
+            if (!AppClient.Connected) BtConnect.PerformClick();
+            if (AppClient.Connected)
+            {
+                AppClient.ExecuteCommand("createplugin sampleplugin x" + id.ToString(), timeout);
+                AppClient.ExecuteCommand("x" + id.ToString() + " plugincommand1", timeout);
+
+                AppClient.ExecuteCommand("createplugin simplemath m" + id.ToString(), timeout);
+            }
+
+        }
+
+        private void BtAutoSum_Click(object sender, EventArgs e)
+        {
+            int timeout = Convert.ToInt32(TxtTimeout.Text);
+            if (ptrClient != AppClient) return;
+
+            Random r = new Random((int)DateTime.Now.Ticks);
+            int a = r.Next() % 1000;
+            int b = r.Next() % 1000;
+            int c = a + b;
+
+            TcpAppCommandResult result;
+            for (int x = 0; x < 100; x++)
+            {
+                System.Threading.Thread.Sleep(1000);
+                result = AppClient.ExecuteCommand(string.Format("m{0} SumQ {1} {2}", id, a, b), timeout);
+                if(result.Status == TcpAppCommandStatus.QUEUED)
+                {
+                    do
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                        result = AppClient.ExecuteCommand("checkstatus", timeout);
+                    } while (result.Status >= TcpAppCommandStatus.QUEUED);
+                }
+
+                if (result.ReturnMessage.Split('\n').First() != c.ToString()) MessageBox.Show("ERROR!");
+            }
         }
     }
 }

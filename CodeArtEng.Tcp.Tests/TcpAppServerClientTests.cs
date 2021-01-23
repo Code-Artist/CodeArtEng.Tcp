@@ -56,7 +56,7 @@ namespace CodeArtEng.Tcp.Tests
 
 
         [OneTimeTearDown]
-        public void Finalize()
+        public void Cleanup()
         {
             Server.Dispose();
             Client.Dispose();
@@ -104,7 +104,7 @@ namespace CodeArtEng.Tcp.Tests
             e.Cancel = true;
         }
 
-        [Test]
+        [Test, Order(1)]
         public void SignInAccessDenied()
         {
             Server.ClientSigningIn += Server_ClientSigningIn;
@@ -114,13 +114,13 @@ namespace CodeArtEng.Tcp.Tests
                 {
                     Client.Connect();
                 });
-                Thread.Sleep(10);
-                Client.Disconnect();
 
             }
             finally
             {
-                Server.ClientSignedIn -= Server_ClientSignedIn;
+                Server.ClientSigningIn -= Server_ClientSigningIn;
+                Client.Disconnect();
+                Thread.Sleep(100);
             }
         }
 
@@ -186,8 +186,8 @@ namespace CodeArtEng.Tcp.Tests
                 }
             }
             while (true) { client.ExecuteCommand("CheckStatus"); Thread.Sleep(5000); }
-            client.Disconnect();
-            client.Dispose();
+            //client.Disconnect();
+            //client.Dispose();
         }
 
         public void Client3Execution()

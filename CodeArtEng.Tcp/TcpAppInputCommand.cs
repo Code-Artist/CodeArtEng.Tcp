@@ -39,7 +39,14 @@ namespace CodeArtEng.Tcp
         {
             try
             {
+                Status = TcpAppCommandStatus.BUSY; //Start Execution
                 Command?.ExecuteCallback(this);
+                //if (Status == TcpAppCommandStatus.BUSY)
+                //{
+                //    //Default status as Error is not updated.
+                //    Status = TcpAppCommandStatus.ERR;
+                //    OutputMessage = "Unknown Error!";
+                //}
             }
             catch (Exception ex)
             {

@@ -14,6 +14,7 @@ namespace TcpServerExample
 
         private delegate void TCPMethod(object sender, TcpServerEventArgs e);
         private delegate void TCPDataMethod(object sender, TcpServerDataEventArgs e);
+        private delegate void TCPMessageReceivedMethod(object sender, MessageReceivedEventArgs e);
 
         public Form1()
         {
@@ -36,6 +37,7 @@ namespace TcpServerExample
             AppServer.ClientSignedIn += AppServer_ClientInitialized;
             AppServer.ClientSigningOut += AppServer_ClientSigningOut;
             tcpClientsList1.AssignObject(AppServer);
+            tcpAppServerQueue1.AssignObject(AppServer);
 
             //TCP Application Server Customization Test
             AppServer.RegisterCommand("CustomFunction", "Dummy Custom Function", customFunctionCallback);
@@ -43,9 +45,11 @@ namespace TcpServerExample
                 TcpAppParameter.CreateParameter("P1", "Parameter 1"),
                 TcpAppParameter.CreateOptionalParameter("P2", "Parameter 2, optional.", "10"));
             AppServer.RegisterCommand("SlowCommand", "Command which take 10 seconds to complete. Simulate blocking!", SlowCommand);
+            AppServer.RegisterQueuedCommand("SlowCommandQ", "Command which take 10 seconds to complete. Run in queue. Simulate blocking!", SlowCommand);
 
             CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin SamplePlugin = new CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin();
             AppServer.RegisterPluginType(typeof(CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin));
+            AppServer.RegisterPluginType(typeof(CodeArtEng.Tcp.Tests.TcpAppServerSimpleMath));
 
             propertyGrid2.SelectedObject = AppServer;
         }
@@ -79,34 +83,34 @@ namespace TcpServerExample
 
         private void LogInfo(RichTextBox target, string text)
         {
-            target.SelectionColor = System.Drawing.Color.Black;
-            target.AppendText(text + "\n");
-            target.SelectionStart = target.TextLength;
-            target.ScrollToCaret();
+            //target.SelectionColor = System.Drawing.Color.Black;
+            //target.AppendText(text + "\n");
+            //target.SelectionStart = target.TextLength;
+            //target.ScrollToCaret();
         }
 
         private void LogRX(RichTextBox target, string message)
         {
-            target.SelectionColor = System.Drawing.Color.DarkGreen;
-            target.AppendText(message + "\n");
-            target.SelectionStart = target.TextLength;
-            target.ScrollToCaret();
+            //target.SelectionColor = System.Drawing.Color.DarkGreen;
+            //target.AppendText(message + "\n");
+            //target.SelectionStart = target.TextLength;
+            //target.ScrollToCaret();
         }
 
         private void LogRX(RichTextBox target, byte[] data)
         {
-            target.SelectionColor = System.Drawing.Color.DarkGreen;
-            target.AppendText(Encoding.ASCII.GetString(data) + "\n");
-            target.SelectionStart = target.TextLength;
-            target.ScrollToCaret();
+            //target.SelectionColor = System.Drawing.Color.DarkGreen;
+            //target.AppendText(Encoding.ASCII.GetString(data));
+            //target.SelectionStart = target.TextLength;
+            //target.ScrollToCaret();
         }
 
         private void LogTX(RichTextBox target, byte[] data)
         {
-            target.SelectionColor = System.Drawing.Color.Blue;
-            target.AppendText(Encoding.ASCII.GetString(data) + "\n");
-            target.SelectionStart = target.TextLength;
-            target.ScrollToCaret();
+            //target.SelectionColor = System.Drawing.Color.Blue;
+            //target.AppendText(Encoding.ASCII.GetString(data));
+            //target.SelectionStart = target.TextLength;
+            //target.ScrollToCaret();
         }
 
         #region [ TCP Server ]
@@ -119,6 +123,7 @@ namespace TcpServerExample
                 return;
             }
             tcpClient = e.Client;
+            e.Client.MessageReceived += Client_MessageReceived1;
             e.Client.BytesReceived += Client_BytesReceived;
             e.Client.BytesSent += Client_BytesSent;
             LogInfo(tcpServerLog, "Client Connected: " + tcpClient.ClientIPAddress);
@@ -146,6 +151,19 @@ namespace TcpServerExample
             LogTX(tcpServerLog, e.Data);
         }
 
+        private void Client_MessageReceived1(object sender, MessageReceivedEventArgs e)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new TCPMessageReceivedMethod(Client_MessageReceived1), new object[] { sender, e });
+                return;
+
+            }
+
+            //Display Received Bytes
+            if (!string.IsNullOrEmpty(txtReply.Text)) e.Client.WriteLineToClient(txtReply.Text);
+        }
+
         private void Client_BytesReceived(object sender, TcpServerDataEventArgs e)
         {
             if (InvokeRequired)
@@ -156,7 +174,6 @@ namespace TcpServerExample
 
             //Display Received Bytes
             LogRX(tcpServerLog, e.Data);
-            if (!string.IsNullOrEmpty(txtReply.Text)) e.Client.WriteLineToClient(txtReply.Text);
         }
 
         private void Server_StateChanged(object sender, EventArgs e)
@@ -258,6 +275,7 @@ namespace TcpServerExample
 
         private void Form1_Shown(object sender, EventArgs e)
         {
+            Server.Start(Convert.ToInt32(txtPort.Text));
             AppServer.Start(Convert.ToInt32(txtAppServerPort.Text));
             propertyGrid2.Refresh();
         }

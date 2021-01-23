@@ -50,6 +50,9 @@
     <Compile Include="..\CodeArtEng.Tcp.Tests\TcpAppServerSamplePlugin.cs">
       <Link>TcpAppServerSamplePlugin.cs</Link>
     </Compile>
+    <Compile Include="..\CodeArtEng.Tcp.Tests\TcpAppServerSimpleMath.cs">
+      <Link>TcpAppServerSimpleMath.cs</Link>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -24,6 +24,8 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppPlugin.RegisterCommand("Sum", "Add arguments", Sum,
                 TcpAppParameter.CreateParameterArray("Values", "value to sum", false));
+            TcpAppPlugin.RegisterQueuedCommand("SumQ", "Add arguments", SumQ,
+                TcpAppParameter.CreateParameterArray("Values", "value to sum", false));
             TcpAppPlugin.RegisterCommand("TimeoutSim", "Simulate Timeout", TimeoutSim);
         }
 
@@ -36,6 +38,14 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppParameter param = sender.Command.Parameter("Values");
             double result = param.Values.Select(x => Convert.ToDouble(x)).Sum();
+            sender.OutputMessage = result.ToString();
+            sender.Status = TcpAppCommandStatus.OK;
+        }
+        public void SumQ(TcpAppInputCommand sender)
+        {
+            TcpAppParameter param = sender.Command.Parameter("Values");
+            double result = param.Values.Select(x => Convert.ToDouble(x)).Sum();
+            System.Threading.Thread.Sleep((int)(result * 2));
             sender.OutputMessage = result.ToString();
             sender.Status = TcpAppCommandStatus.OK;
         }

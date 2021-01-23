@@ -44,13 +44,13 @@ namespace CodeArtEng.Tcp
         {
             foreach (TcpAppCommand cmd in Commands)
             {
-                lines.Add(string.Format(" {0,-20}  {1}", cmd.Keyword.ToUpper(), cmd.Description));
+                lines.Add(string.Format(" {0,-20}  {1}", cmd.Keyword.ToUpper(),  (cmd.UseMessageQueue ? "(Q) " : "") + cmd.Description));
                 foreach (TcpAppParameter p in cmd.Parameters)
                 {
                     if (p.IsOptional)
-                        lines.Add(string.Format("  {0,-19}  ~ {1}", "[" + p.Name + (p.IsArray ? "[]" : "") + "]", p.Description));
+                        lines.Add(string.Format("  {0,-19}  : {1}", "[" + p.Name + (p.IsArray ? "[]" : "") + "]", p.Description));
                     else
-                        lines.Add(string.Format("  {0,-19}  ~ {1}", "<" + p.Name + (p.IsArray ? "[]" : "") + ">", p.Description));
+                        lines.Add(string.Format("  {0,-19}  : {1}", "<" + p.Name + (p.IsArray ? "[]" : "") + ">", p.Description));
                 }
             }
         }

@@ -25,6 +25,9 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public event EventHandler<TcpAppClientEventArgs> ResponseReceived;
 
+        /// <summary>
+        /// Unique Connection ID returned from <see cref="TcpAppServer"/> in <see cref="Connect"/> methods.
+        /// </summary>
         public string ConnectionID { get; private set; }
         /// <summary>
         /// Return Server Application Name
@@ -52,14 +55,12 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="name"></param>
         public TcpAppClient() : base() { InitInstance(); }
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="hostName"></param>
         /// <param name="port"></param>
-        /// <param name="name"></param>
         public TcpAppClient(string hostName, int port) : base(hostName, port) { InitInstance(); }
 
         private void InitInstance()

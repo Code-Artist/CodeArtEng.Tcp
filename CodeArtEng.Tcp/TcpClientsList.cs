@@ -10,19 +10,29 @@ using System.Windows.Forms;
 
 namespace CodeArtEng.Tcp
 {
+    /// <summary>
+    /// WinForms control to display list of TCP Clients connected to assigned server.
+    /// </summary>
     public partial class TcpClientsList : UserControl
     {
         private bool IsTcpAppServer { get; set; } = false;
-        public TcpServer Server { get; private set; }
+        private TcpServer Server { get; set; }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public TcpClientsList()
         {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Assign <see cref="TcpServer"/> object to control.
+        /// </summary>
+        /// <param name="server"></param>
         public void AssignObject(TcpServer server)
         {
-            if(Server != null)
+            if (Server != null)
             {
                 Server.ClientConnected -= Server_ClientConnected;
                 Server.ClientDisconnected -= Server_ClientDisconnected;
@@ -36,7 +46,7 @@ namespace CodeArtEng.Tcp
                 appServer.ClientSignedIn += AppServer_ClientSignedIn;
                 appServer.ClientSigningOut += AppServer_ClientSigningOut;
                 appServer.ClientDisconnected += Server_ClientDisconnected;
-                
+
             }
             else
             {
@@ -57,7 +67,7 @@ namespace CodeArtEng.Tcp
 
         private void Server_ClientDisconnected(object sender, TcpServerEventArgs e)
         {
-            RefreshControl();   
+            RefreshControl();
         }
 
         private void Server_ClientConnected(object sender, TcpServerEventArgs e)
@@ -67,7 +77,7 @@ namespace CodeArtEng.Tcp
 
         private void RefreshControl()
         {
-            if(this.InvokeRequired)
+            if (this.InvokeRequired)
             {
                 BeginInvoke(new MethodInvoker(RefreshControl));
                 return;
@@ -80,12 +90,16 @@ namespace CodeArtEng.Tcp
                 if (IsTcpAppServer)
                 {
                     TcpAppServer appServer = Server as TcpAppServer;
-                    foreach (TcpAppServerConnection c in appServer.AppClients)
+                    //Thread lock to prevent race condition.
+                    lock (appServer.AppClients)
                     {
-                        ClientTable.Rows.Add(
-                            c.Name + " | " + c.Connection.ClientIPAddress.ToString(), 
-                            c.Connection.Connected ? "Connected" : "-"
-                            );
+                        foreach (TcpAppServerConnection c in appServer.AppClients)
+                        {
+                            ClientTable.Rows.Add(
+                                c.Name + " | " + c.Connection.ClientIPAddress.ToString(),
+                                c.Connection.Connected ? "Connected" : "-"
+                                );
+                        }
                     }
                 }
                 else

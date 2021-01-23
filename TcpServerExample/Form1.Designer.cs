@@ -55,7 +55,9 @@
             this.txtAppServerPort = new System.Windows.Forms.TextBox();
             this.tcpAppServerLog = new System.Windows.Forms.RichTextBox();
             this.panel4 = new System.Windows.Forms.Panel();
+            this.QueuePanel = new System.Windows.Forms.Panel();
             this.tcpClientsList1 = new CodeArtEng.Tcp.TcpClientsList();
+            this.tcpAppServerQueue1 = new CodeArtEng.Tcp.TcpAppServerQueue();
             this.panel1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -70,6 +72,7 @@
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.panel2.SuspendLayout();
+            this.QueuePanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // propertyGrid1
@@ -77,7 +80,7 @@
             this.propertyGrid1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.propertyGrid1.Location = new System.Drawing.Point(3, 34);
             this.propertyGrid1.Name = "propertyGrid1";
-            this.propertyGrid1.Size = new System.Drawing.Size(397, 688);
+            this.propertyGrid1.Size = new System.Drawing.Size(218, 688);
             this.propertyGrid1.TabIndex = 0;
             // 
             // panel1
@@ -91,7 +94,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(809, 93);
+            this.panel1.Size = new System.Drawing.Size(988, 93);
             this.panel1.TabIndex = 1;
             // 
             // label5
@@ -137,7 +140,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtReply.Location = new System.Drawing.Point(71, 6);
             this.txtReply.Name = "txtReply";
-            this.txtReply.Size = new System.Drawing.Size(725, 20);
+            this.txtReply.Size = new System.Drawing.Size(904, 20);
             this.txtReply.TabIndex = 3;
             this.txtReply.Text = "ACK";
             // 
@@ -176,7 +179,7 @@
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(1359, 757);
+            this.tabControl1.Size = new System.Drawing.Size(1230, 757);
             this.tabControl1.TabIndex = 2;
             // 
             // tabPage1
@@ -207,7 +210,7 @@
             this.splitContainer1.Panel2.Controls.Add(this.tcpServerLog);
             this.splitContainer1.Panel2.Controls.Add(this.panel1);
             this.splitContainer1.Size = new System.Drawing.Size(1216, 725);
-            this.splitContainer1.SplitterDistance = 403;
+            this.splitContainer1.SplitterDistance = 224;
             this.splitContainer1.TabIndex = 4;
             // 
             // panel3
@@ -219,7 +222,7 @@
             this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel3.Location = new System.Drawing.Point(3, 3);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(397, 31);
+            this.panel3.Size = new System.Drawing.Size(218, 31);
             this.panel3.TabIndex = 0;
             // 
             // BtStop
@@ -248,18 +251,18 @@
             this.tcpServerLog.Location = new System.Drawing.Point(0, 93);
             this.tcpServerLog.Name = "tcpServerLog";
             this.tcpServerLog.ReadOnly = true;
-            this.tcpServerLog.Size = new System.Drawing.Size(809, 632);
+            this.tcpServerLog.Size = new System.Drawing.Size(988, 632);
             this.tcpServerLog.TabIndex = 2;
             this.tcpServerLog.Text = "";
             // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.splitContainer2);
-            this.tabPage2.Controls.Add(this.tcpClientsList1);
+            this.tabPage2.Controls.Add(this.QueuePanel);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1351, 731);
+            this.tabPage2.Size = new System.Drawing.Size(1222, 731);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "TCP App Server";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -280,8 +283,8 @@
             // 
             this.splitContainer2.Panel2.Controls.Add(this.tcpAppServerLog);
             this.splitContainer2.Panel2.Controls.Add(this.panel4);
-            this.splitContainer2.Size = new System.Drawing.Size(1080, 725);
-            this.splitContainer2.SplitterDistance = 358;
+            this.splitContainer2.Size = new System.Drawing.Size(971, 725);
+            this.splitContainer2.SplitterDistance = 321;
             this.splitContainer2.TabIndex = 5;
             // 
             // propertyGrid2
@@ -289,7 +292,7 @@
             this.propertyGrid2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.propertyGrid2.Location = new System.Drawing.Point(3, 34);
             this.propertyGrid2.Name = "propertyGrid2";
-            this.propertyGrid2.Size = new System.Drawing.Size(352, 688);
+            this.propertyGrid2.Size = new System.Drawing.Size(315, 688);
             this.propertyGrid2.TabIndex = 0;
             // 
             // panel2
@@ -301,7 +304,7 @@
             this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel2.Location = new System.Drawing.Point(3, 3);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(352, 31);
+            this.panel2.Size = new System.Drawing.Size(315, 31);
             this.panel2.TabIndex = 0;
             // 
             // btAppServerStop
@@ -348,7 +351,7 @@
             this.tcpAppServerLog.Location = new System.Drawing.Point(0, 93);
             this.tcpAppServerLog.Name = "tcpAppServerLog";
             this.tcpAppServerLog.ReadOnly = true;
-            this.tcpAppServerLog.Size = new System.Drawing.Size(718, 632);
+            this.tcpAppServerLog.Size = new System.Drawing.Size(646, 632);
             this.tcpAppServerLog.TabIndex = 2;
             this.tcpAppServerLog.Text = "";
             // 
@@ -357,22 +360,41 @@
             this.panel4.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel4.Location = new System.Drawing.Point(0, 0);
             this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(718, 93);
+            this.panel4.Size = new System.Drawing.Size(646, 93);
             this.panel4.TabIndex = 1;
+            // 
+            // QueuePanel
+            // 
+            this.QueuePanel.Controls.Add(this.tcpAppServerQueue1);
+            this.QueuePanel.Controls.Add(this.tcpClientsList1);
+            this.QueuePanel.Dock = System.Windows.Forms.DockStyle.Right;
+            this.QueuePanel.Location = new System.Drawing.Point(974, 3);
+            this.QueuePanel.Name = "QueuePanel";
+            this.QueuePanel.Size = new System.Drawing.Size(245, 725);
+            this.QueuePanel.TabIndex = 3;
             // 
             // tcpClientsList1
             // 
-            this.tcpClientsList1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.tcpClientsList1.Location = new System.Drawing.Point(1083, 3);
+            this.tcpClientsList1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tcpClientsList1.Location = new System.Drawing.Point(0, 0);
             this.tcpClientsList1.Name = "tcpClientsList1";
-            this.tcpClientsList1.Size = new System.Drawing.Size(265, 725);
+            this.tcpClientsList1.Size = new System.Drawing.Size(245, 241);
             this.tcpClientsList1.TabIndex = 0;
+            // 
+            // tcpAppServerQueue1
+            // 
+            this.tcpAppServerQueue1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tcpAppServerQueue1.Location = new System.Drawing.Point(0, 241);
+            this.tcpAppServerQueue1.Name = "tcpAppServerQueue1";
+            this.tcpAppServerQueue1.Size = new System.Drawing.Size(245, 484);
+            this.tcpAppServerQueue1.TabIndex = 1;
+            this.tcpAppServerQueue1.UpdateInterval = 200;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1359, 757);
+            this.ClientSize = new System.Drawing.Size(1230, 757);
             this.Controls.Add(this.tabControl1);
             this.Name = "Form1";
             this.Text = "TCP Server";
@@ -395,6 +417,7 @@
             this.splitContainer2.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
+            this.QueuePanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -429,6 +452,8 @@
         private System.Windows.Forms.RichTextBox tcpAppServerLog;
         private System.Windows.Forms.Panel panel4;
         private CodeArtEng.Tcp.TcpClientsList tcpClientsList1;
+        private System.Windows.Forms.Panel QueuePanel;
+        private CodeArtEng.Tcp.TcpAppServerQueue tcpAppServerQueue1;
     }
 }
 

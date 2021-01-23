@@ -18,6 +18,8 @@ namespace CodeArtEng.Tcp
     /// </summary>
     public class TcpAppServer : TcpServer
     {
+        //ToDo: Option for TcpAppServer to execute with / without thread.
+
         private long Counter = 0;
         /// <summary>
         /// Occur when TcpAppClient is about to sign in. Subscribe this event to decide if a client is allowed to connect.
@@ -52,10 +54,41 @@ namespace CodeArtEng.Tcp
         private readonly List<TcpAppServerPluginType> PluginTypes = new List<TcpAppServerPluginType>();
         private readonly List<ITcpAppServerPlugin> _Plugins = new List<ITcpAppServerPlugin>();
 
-        private List<TcpAppInputCommand> ResultQueue = new List<TcpAppInputCommand>();
-        private List<TcpAppInputCommand> CommandQueue = new List<TcpAppInputCommand>();
-        private EventWaitHandle CommandQueueWaitSignal = new ManualResetEvent(false);
-        private Thread CommandQueueThread;
+        private readonly List<TcpAppInputCommand> ResultQueue = new List<TcpAppInputCommand>();
+        private readonly List<TcpAppInputCommand> CommandQueue = new List<TcpAppInputCommand>();
+        private readonly EventWaitHandle CommandQueueWaitSignal = new ManualResetEvent(false);
+        private readonly Thread CommandQueueThread;
+
+        /// <summary>
+        /// Return list of queued commands
+        /// </summary>
+        /// <returns></returns>
+        public string[] GetQueuedCommand()
+        {
+            lock (CommandQueue)
+            {
+                return CommandQueue.Select(x => x.AppClient.Name + ": " + string.Join(" ", x.Command, x.Arguments)).ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Return list of queued results
+        /// </summary>
+        /// <returns></returns>
+        public string[] GetQueuedResults()
+        {
+            lock (ResultQueue)
+            {
+                return ResultQueue.Select(x => x.AppClient.Name + ": " + string.Join(" ", x.Command, x.Arguments) + " [" + x.Status.ToString() + "]").ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Duration in ms to terminate command execution and return timeout error.
+        /// Default is 0, wait forever.
+        /// </summary>
+        /// <remarks>Not applicable for system commands and queued commands</remarks>
+        public int ExecutionTimeout { get; set; } = 0;
 
         /// <summary>
         /// Optional user defined Welcome message sent to client in "TcpAppInit" command.
@@ -108,9 +141,9 @@ namespace CodeArtEng.Tcp
                         else sender.AppClient.SignedIn = false;
                     }
 
-                    TcpAppServerExEventArgs signInArg = new TcpAppServerExEventArgs(sender.AppClient) { Value = machineName } ;
+                    TcpAppServerExEventArgs signInArg = new TcpAppServerExEventArgs(sender.AppClient) { Value = machineName };
                     ClientSigningIn?.Invoke(this, signInArg);
-                    if(signInArg.Cancel == true)
+                    if (signInArg.Cancel == true)
                     {
                         sender.OutputMessage = signInArg.Reason;
                         if (string.IsNullOrEmpty(sender.OutputMessage)) sender.OutputMessage = "Access Denied!";
@@ -128,28 +161,30 @@ namespace CodeArtEng.Tcp
                             {
                                 if (!AppClients[x].Connection.Connected && AppClients[x].Name.StartsWith(uniqueName))
                                 {
+                                    AppClients[x].Dispose();
                                     AppClients.RemoveAt(x);
                                 }
                                 else x++;
                             }
                         }
+                        while (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
+                        {
+                            uniqueName = machineName + "_" + (++Counter).ToString();
+                        }
+                        sender.AppClient.Name = uniqueName;
+                        sender.OutputMessage = uniqueName;
+                        sender.Status = TcpAppCommandStatus.OK;
+                        sender.AppClient.SignedIn = true;
+                        ClientSignedIn?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient)); //Event
                     }
 
-                    while (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
-                    {
-                        uniqueName = machineName + "_" + (++Counter).ToString();
-                    }
-                    sender.AppClient.Name = uniqueName;
-                    sender.OutputMessage = uniqueName;
-                    sender.Status = TcpAppCommandStatus.OK;
-                    sender.AppClient.SignedIn = true;
-                    ClientSignedIn?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient)); //Event
                 },
                 TcpAppParameter.CreateParameter("ConnectionID", "Connection ID. If already exist, server will return an updated unique ID."));
             RegisterSystemCommand("SignOut", "Signout TcpAppClient.", delegate (TcpAppInputCommand sender)
                 {
                     ClientSigningOut?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient));
-                    AppClients.Remove(sender.AppClient);
+                    sender.AppClient.Dispose();
+                    lock (AppClients) { AppClients.Remove(sender.AppClient); }
                     sender.AppClient.SignedIn = false;
                     sender.Status = TcpAppCommandStatus.OK;
                 });
@@ -262,6 +297,8 @@ namespace CodeArtEng.Tcp
                                         ResultQueue.Remove(cmd);
                                         sender.OutputMessage += cmd.OutputMessage + "\n";
                                     }
+
+                                    //Return number of remaining queued commands
                                     sender.OutputMessage += CommandQueue.Where(x => x.AppClient == sender.AppClient).Count().ToString();
                                     sender.AppClient.NextQueuedCommand = nextQueue;
                                 }
@@ -271,17 +308,17 @@ namespace CodeArtEng.Tcp
                     else
                     {
                         //Return status of specific message.
-                        TcpAppInputCommand ptrCmd = CommandQueue.FirstOrDefault(x => x.AppClient == sender.AppClient);
+                        TcpAppInputCommand ptrCmd = CommandQueue.FirstOrDefault(x => x.AppClient == sender.AppClient && x.ID == queueID);
                         if (ptrCmd == null)
                         {
                             ptrCmd = ResultQueue.FirstOrDefault(x => x.AppClient == sender.AppClient);
                             if (ptrCmd != null) ResultQueue.Remove(ptrCmd);
-                        }
-
-                        if (ptrCmd == null)
-                        {
-                            sender.Status = TcpAppCommandStatus.ERR;
-                            sender.OutputMessage = "Invalid ID: " + queueID.ToString();
+                            else
+                            {
+                                sender.Status = TcpAppCommandStatus.ERR;
+                                sender.OutputMessage = "Invalid ID: " + queueID.ToString();
+                                return;
+                            }
                         }
 
                         sender.OutputMessage = ptrCmd.OutputMessage;
@@ -321,7 +358,10 @@ namespace CodeArtEng.Tcp
                     {
                         CommandQueue.Clear();
                         ResultQueue.Clear();
-                        foreach (TcpAppServerConnection client in AppClients) client.NextQueuedCommand = null;
+                        lock (AppClients)
+                        {
+                            foreach (TcpAppServerConnection client in AppClients) client.NextQueuedCommand = null;
+                        }
                     }
                     sender.Status = TcpAppCommandStatus.OK;
                 });
@@ -625,16 +665,20 @@ namespace CodeArtEng.Tcp
 
         private TcpAppServerConnection AddClientToAppClientsList(TcpServerConnection client)
         {
-            TcpAppServerConnection result = new TcpAppServerConnection() { Connection = client, Name = "#" + client.ClientIPAddress.ToString() };
-            AppClients.Add(result);
-            client.ProcessReceivedMessageCallback = Client_ProcessReceivedMessage;
-            return result;
+            lock (AppClients)
+            {
+                TcpAppServerConnection result = new TcpAppServerConnection() { Connection = client, Name = "#" + client.ClientIPAddress.ToString() };
+                AppClients.Add(result);
+                client.ProcessReceivedMessageCallback = Client_ProcessReceivedMessage;
+                return result;
+            }
         }
 
         private void TcpAppServer_ClientDisconnected(object sender, TcpServerEventArgs e)
         {
             //Client Disconnected - clean up queued message
             lock (CommandQueue) { CommandQueue.RemoveAll(x => x.AppClient.Connection == e.Client); }
+
         }
 
         private void Client_ProcessReceivedMessage(TcpServerConnection client, string message, byte[] messageBytes)
@@ -671,8 +715,12 @@ namespace CodeArtEng.Tcp
                     else
                     {
                         //Error - Unrecognized command.
-                        client.WriteLineToClient(string.Format("{0} {1} Invalid Command!",
-                            cmdArg[0], TcpAppCommandStatus.ERR.ToString()));
+                        inputCommand = new TcpAppInputCommand()
+                        {
+                            Status = TcpAppCommandStatus.ERR,
+                            OutputMessage = "Invalid Command " + cmdArg[0]
+                        };
+                        WriteResultToClient(ptrClient, inputCommand);
                         return;
                     }
                 }
@@ -688,14 +736,24 @@ namespace CodeArtEng.Tcp
                     {
                         inputCommand.ID = inputCommand.GetHashCode();
                         if (ptrClient.NextQueuedCommand == null) ptrClient.NextQueuedCommand = inputCommand; //Set pointer to next queued command.
+
+                        //Add Command to Queue
                         CommandQueue.Add(inputCommand);
                         CommandQueueWaitSignal.Set();
                         inputCommand.OutputMessage = inputCommand.ID.ToString();
                         inputCommand.Status = TcpAppCommandStatus.QUEUED;
                     }
                 }
-                else inputCommand.ExecuteCallback(); //Execute registered command immediately
-                WriteResultToClient(client, inputCommand); //Send result back to client.
+                else if (inputCommand.Command.IsSystemCommand) inputCommand.ExecuteCallback();
+                else
+                {
+                    //Execute command, wait until return
+                    if (ExecutionTimeout == 0) inputCommand.ExecuteCallback();
+                    //Execute command, terminate on timeout
+                    else ptrClient.ExecuteCommandAsync(inputCommand, ExecutionTimeout);
+                }
+
+                WriteResultToClient(ptrClient, inputCommand); //Send result back to client.
             }
             catch (Exception ex)
             {
@@ -723,35 +781,46 @@ namespace CodeArtEng.Tcp
                         CommandQueue.RemoveAt(0);
                     }
 
-                    System.Diagnostics.Trace.WriteLine("Execute Queue Command: " + string.Join(" ", ptrCommand.Command.Keyword));
+                    System.Diagnostics.Trace.WriteLine(ptrCommand.AppClient.Name + " QCommand: " + string.Join(" ", ptrCommand.Command.Keyword));
                     ResultQueue.Add(ptrCommand);
-                    ptrCommand.Status = TcpAppCommandStatus.BUSY;
                     ptrCommand.ExecuteCallback();
                 }
             }
         }
+
         /// <summary>
-        /// /Dispose object - Abort Command Queu Execution Thread.
+        /// /Dispose object - Abort Command Queue Execution Thread.
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             CommandQueueThread.Abort();
+            CommandQueueWaitSignal.Dispose();
+            lock (AppClients)
+            {
+                foreach (TcpAppServerConnection c in AppClients)
+                {
+                    c.Dispose();
+                }
+            }
             base.Dispose(disposing);
         }
 
-        private void WriteResultToClient(TcpServerConnection client, TcpAppInputCommand input)
+        private void WriteResultToClient(TcpAppServerConnection client, TcpAppInputCommand input)
         {
             string returnMsg = input.Status.ToString() + " ";
             if (!string.IsNullOrEmpty(input.OutputMessage)) returnMsg += input.OutputMessage;
-            System.Diagnostics.Trace.WriteLine("Write to Client : " + returnMsg);
-            client.WriteLineToClient(returnMsg);
+            System.Diagnostics.Trace.WriteLine(client.Name + " Reply: " + returnMsg);
+            client.Connection.WriteLineToClient(returnMsg);
         }
 
         private void WriteExceptionErrorToClient(TcpServerConnection client, Exception ex)
         {
             string returnMsg = TcpAppCommandStatus.ERR + " " + ex.Message;
-            System.Diagnostics.Trace.WriteLine("Write to Client: " + returnMsg);
+            TcpAppServerConnection appServerClient = AppClients.FirstOrDefault(x => x.Connection == client);
+            string clientName = appServerClient == null ? client.ClientIPAddress.ToString() : appServerClient.Name;
+
+            System.Diagnostics.Trace.WriteLine(clientName + " ERR: " + returnMsg);
             client.WriteLineToClient(returnMsg);
         }
 
@@ -764,5 +833,6 @@ namespace CodeArtEng.Tcp
         /// Return list of plugin objects.
         /// </summary>
         public IList<ITcpAppServerPlugin> Plugins { get => _Plugins.AsReadOnly(); }
+
     }
 }

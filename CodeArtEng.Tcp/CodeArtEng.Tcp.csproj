@@ -51,6 +51,12 @@
     <Compile Include="TcpAppCommandResult.cs" />
     <Compile Include="TcpAppCommon.cs" />
     <Compile Include="TcpAppInputCommand.cs" />
+    <Compile Include="TcpAppServerQueue.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TcpAppServerQueue.Designer.cs">
+      <DependentUpon>TcpAppServerQueue.cs</DependentUpon>
+    </Compile>
     <Compile Include="TcpAppServerConnection.cs" />
     <Compile Include="TcpAppServerEventArgs.cs" />
     <Compile Include="TcpAppServerPluginType.cs" />
@@ -79,6 +85,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="TcpAppServerQueue.resx">
+      <DependentUpon>TcpAppServerQueue.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TcpClientsList.resx">
       <DependentUpon>TcpClientsList.cs</DependentUpon>
     </EmbeddedResource>
