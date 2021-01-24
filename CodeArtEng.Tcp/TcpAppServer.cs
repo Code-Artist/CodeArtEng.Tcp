@@ -50,6 +50,8 @@ namespace CodeArtEng.Tcp
         /// <see cref="TcpAppClient"/> connected to server.
         /// </summary>
         public List<TcpAppServerConnection> AppClients { get; private set; } = new List<TcpAppServerConnection>();
+        
+        
         private readonly List<TcpAppCommand> Commands = new List<TcpAppCommand>();
         private readonly List<TcpAppServerPluginType> PluginTypes = new List<TcpAppServerPluginType>();
         private readonly List<ITcpAppServerPlugin> _Plugins = new List<ITcpAppServerPlugin>();
