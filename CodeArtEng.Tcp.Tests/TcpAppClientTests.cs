@@ -19,7 +19,7 @@ namespace CodeArtEng.Tcp.Tests
             Server = new TcpAppServer();
             Server.Start(12500);
             System.Threading.Thread.Sleep(1000);
-            Client = new TcpAppClient("localhost", 12500);
+            Client = new TcpAppClient("127.0.0.1", 12500);
         }
 
         [OneTimeTearDown]

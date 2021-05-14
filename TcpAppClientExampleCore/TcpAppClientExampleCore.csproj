@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\TcpAppClientTerminal\MainForm.cs" Link="MainForm.cs" />
+    <Compile Include="..\TcpAppClientTerminal\MainForm.Designer.cs" Link="MainForm.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeArtEng.Tcp\CodeArtEng.Tcp.csproj" />
+  </ItemGroup>
+
+</Project>

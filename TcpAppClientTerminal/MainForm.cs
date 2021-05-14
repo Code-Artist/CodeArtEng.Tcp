@@ -210,5 +210,18 @@ namespace TcpAppClientTerminal
                 if (result.ReturnMessage.Split('\n').First() != c.ToString()) MessageBox.Show("ERROR!");
             }
         }
+
+        private void BtTestTimeout_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                AppClient.ExecuteCommand("createplugin simplemath m1");
+                AppClient.ExecuteCommand("m1 timeoutsim");
+            }
+            catch (Exception ex)
+            {
+                AppendOutput("ERROR: " + ex.Message + "\r\n", Color.Red);
+            }
+        }
     }
 }

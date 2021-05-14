@@ -11,7 +11,7 @@ namespace CodeArtEng.Tcp.Tests
     [TestFixture]
     public class TcpAppServerTests
     {
-        private TcpAppServer Server = new TcpAppServer();
+        private TcpAppServer Server = new TcpAppServerWindows();
         private TcpAppClient Client = new TcpAppClient("localhost", 25000);
 
         [OneTimeSetUp]
@@ -92,7 +92,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppCommandResult result = ExecuteCommand("applicationNAME?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.AreEqual("Microsoft.TestHost.x86", result.ReturnMessage);
+            Assert.IsTrue(result.ReturnMessage.StartsWith("Microsoft.TestHost"));
         }
 
         [Test]
@@ -100,7 +100,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppCommandResult result = ExecuteCommand("ApplicationVersion?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.AreEqual("16.6.0", result.ReturnMessage);
+            Assert.IsTrue(result.ReturnMessage.StartsWith("16"));  //NUnit Agent Version
         }
 
         [Test]

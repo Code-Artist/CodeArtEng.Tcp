@@ -87,6 +87,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CodeArtEng.Tcp.WinForms\CodeArtEng.Tcp.WinForms.csproj">
+      <Project>{525ef5df-dbdc-4a1d-be10-fc5d5f947682}</Project>
+      <Name>CodeArtEng.Tcp.WinForms</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CodeArtEng.Tcp\CodeArtEng.Tcp.csproj">
       <Project>{81f0a37b-50b0-4e85-a457-c74f867a9012}</Project>
       <Name>CodeArtEng.Tcp</Name>

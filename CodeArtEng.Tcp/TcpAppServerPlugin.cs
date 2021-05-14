@@ -90,7 +90,7 @@ namespace CodeArtEng.Tcp
             if (commandArguments == null) throw new ArgumentNullException(nameof(commandArguments), "Invalid command / empty string!");
 
             TcpAppInputCommand command = TcpAppCommon.CreateInputCommand(Commands, commandArguments);
-            if (command == null) throw new ArgumentException("Unknown command: " + commandArguments.FirstOrDefault());
+            if (command == null)throw new ArgumentException("Unknown command: " + commandArguments.FirstOrDefault());
             return command;
         }
     }

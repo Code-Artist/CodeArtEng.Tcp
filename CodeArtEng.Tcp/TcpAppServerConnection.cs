@@ -11,7 +11,7 @@ namespace CodeArtEng.Tcp
     /// <summary>
     /// Incoming connection for <see cref="TcpAppServer"/>
     /// </summary>
-    public class TcpAppServerConnection: IDisposable
+    public class TcpAppServerConnection : IDisposable
     {
         /// <summary>
         /// Name of <see cref="TcpAppServerConnection"/>.
@@ -33,61 +33,93 @@ namespace CodeArtEng.Tcp
         private TcpAppInputCommand Command;
 
         private EventWaitHandle ExecutionSignal = new AutoResetEvent(false);
-        private EventWaitHandle ExecutionWatchDog = new AutoResetEvent(false);
+        private EventWaitHandle ExecutionWatchDog = new ManualResetEvent(false);
         internal Thread ExecutionThread = null;
         private bool disposedValue;
+        private CancellationTokenSource CancellationToken = null;
 
         /// <summary>
         /// Constructor - Create new instance. Initiate execution thread
         /// </summary>
         public TcpAppServerConnection()
         {
-            if (ExecutionThread == null)
-            {
-                ExecutionThread = new Thread(ExecuteCommand);
-                ExecutionThread.Name = "TcpApp-" + Name;
-                ExecutionThread.Start();
-            }
+            CreateAndStartExecutionThread();
         }
 
+        private void StopExecutionThread()
+        {
+            //Cancel Thread - Implement using CancellationTokenSource?
+            //https://docs.microsoft.com/en-us/dotnet/standard/threading/cancellation-in-managed-threads
+
+            //AbortExecutionThread = true;
+            Trace.WriteLine("AppServer-StopThread");
+            CancellationToken.Cancel();
+            Trace.WriteLine("AppServer: Cancellation token signaled.");
+            ExecutionSignal.Set();
+            Thread.Sleep(500);
+            CancellationToken.Dispose();
+            CancellationToken = null;
+        }
+
+        private void CreateAndStartExecutionThread()
+        {
+            if (CancellationToken != null) StopExecutionThread();
+            CancellationToken = new CancellationTokenSource();
+            ThreadPool.QueueUserWorkItem(new WaitCallback(ExecutionThread_DoWork), CancellationToken.Token);
+        }
+
+        /// <summary>
+        /// Execute command with timeout handling
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="timeout_ms"></param>
         internal void ExecuteCommandAsync(TcpAppInputCommand command, int timeout_ms)
         {
             Command = command;
-            Debug.WriteLine("ExecuteCommandAsync - Start");
+            Debug.WriteLine("ExecuteCommandAsync: Start");
+            ExecutionWatchDog.Reset();
             ExecutionSignal.Set();
             bool done = ExecutionWatchDog.WaitOne(timeout_ms);
 
             if (!done)
             {
-                Debug.WriteLine("ExecuteCommandAsync Timeout! Recrete ExecutionThread!");
-                ExecutionThread.Abort();
-                Command.OutputMessage = "Timeout";
+                Debug.WriteLine("[ERROR]AppServer-ExecuteCommandAsync: Timeout! Recreate execution thread!");
+                StopExecutionThread();
+                Command.OutputMessage = "Server Timeout";
                 Command.Status = TcpAppCommandStatus.ERR;
                 Command = null;
-                ExecutionThread = new Thread(ExecuteCommand);
-                ExecutionThread.Name = "TcpApp-" + Name;
-                ExecutionThread.Start();
+                CreateAndStartExecutionThread();
             }
             else
-                Debug.WriteLine("ExecuteCommandAsync - Completed");
+                Debug.WriteLine("ExecuteCommandAsync: Completed");
         }
 
-        private void ExecuteCommand()
+        private void ExecutionThread_DoWork(object obj)
         {
-            while (true)
+            try
             {
-                if (Command == null)
+                CancellationToken token = (CancellationToken)obj;
+                while (!token.IsCancellationRequested)
                 {
-                    Debug.WriteLine("ExecuteCommand - WAIT");
-                    ExecutionSignal.WaitOne();
+                    if (Command == null)
+                    {
+                        Debug.WriteLine("EecutionThread " + Thread.CurrentThread.GetHashCode() + ": Execution Signal, wait for next...");
+                        ExecutionSignal.WaitOne();
+                        Debug.WriteLine("EecutionThread " + Thread.CurrentThread.GetHashCode() + ": Execution Signal received.");
 
+                    }
+                    else
+                    {
+                        Debug.WriteLine("EecutionThread " + Thread.CurrentThread.GetHashCode() + ": Processing command...");
+                        Command?.ExecuteCallback();
+                        Command = null;
+                        ExecutionWatchDog.Set(); //Notify Watch dog execution completed.
+                        Debug.WriteLine("EecutionThread " + Thread.CurrentThread.GetHashCode() + ": Completed.");
+                    }
                 }
-                Debug.WriteLine("ExecuteCommand - Processing");
-                Command?.ExecuteCallback();
-                Command = null;
-                ExecutionWatchDog.Set(); //Notify Watch dog execution completed.
-                Debug.WriteLine("ExecuteCommand - Completed.");
+                if (token.IsCancellationRequested) Trace.WriteLine("EecutionThread " + Thread.CurrentThread.GetHashCode() + ": Thread Cancel and Terminated!");
             }
+            catch(Exception ex) { Trace.WriteLine("[ERROR] ExecutionThread Crahsed: " + ex.Message); }
         }
 
         #region [ IDisposable ]
@@ -103,7 +135,7 @@ namespace CodeArtEng.Tcp
                 if (disposing)
                 {
                     Command = null;
-                    ExecutionThread.Abort();
+                    StopExecutionThread();
                     ExecutionSignal.Dispose();
                     ExecutionWatchDog.Dispose();
                 }

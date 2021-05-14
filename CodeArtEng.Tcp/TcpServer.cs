@@ -163,7 +163,7 @@ namespace CodeArtEng.Tcp
             ConnectionMonitoring = new Thread(MonitorIncomingConnection) { Name = "Connection Monitoring" };
             ConnectionMonitoring.Start();
             ServerStarted?.Invoke(this, null);
-            Trace.WriteLine(Name + ":TCP Server Started at port " + Port);
+            Trace.WriteLine(Name + ": TCP Server Started at port " + Port);
         }
 
         /// <summary>
@@ -185,6 +185,7 @@ namespace CodeArtEng.Tcp
             DisconnectAllClients();
             ConnectionMonitoring = null;
             ServerStopped?.Invoke(this, null);
+            Trace.WriteLine(Name + ": Shut Down.");
         }
 
         private void DisconnectAllClients()

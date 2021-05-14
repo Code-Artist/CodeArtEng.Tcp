@@ -1,12 +1,13 @@
 # CodeArtEng.Tcp
-CodeArtEng.Tcp is a .NET Tcp Server and Client implementation with multiple client handling written in C#.
+CodeArtEng.Tcp is a .NET Tcp Server and Client implementation with multiple client handling written in C#. ![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp)<br>
+CodeArtEng.Tcp.WinForms contains user controls for WinForms application. ![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp.WinForms)<br>
 
 TCP Server:
 - Multi-threaded TCP server with multi client support.
 - Detect client connect / disconnect.
 - Delimited message mode, ideal for instrument control.
 
-TCP Client: 
+TCP Client:
 - Read / Write bytes array / string to Server.
 - Check connection status with Server.
 
@@ -26,9 +27,9 @@ private void Server_ClientConnected(object sender, TcpServerEventArgs e)
 {
     //Subscribe to TCPServerConnection bytes received event to capture incoming byte
     e.Client.BytesReceived += Client_BytesReceived;
-    
+
     //OR
-    
+
     //Subscribe to TCPServerConnection message received event to capture delimited string
     e.Client.MessageReceived += Client_MessageReceived;   
 }
@@ -37,7 +38,7 @@ private void Client_BytesReceived(object sender, BytesReceivedEventArgs e)
 {
     //Read from Client
     byte [] data = e.Client.ReceivedBytes;
-    
+
     //Handle incoming messages from TCP Client.
 
     //Write to Client
@@ -74,6 +75,5 @@ private void WriteDataToServer()
 Documentation and explanation regarding TcpAppServer and TcpAppClient is available at<br>
 [TCP Application Protocol – TCP/IP based Inter-process Communication](https://www.codeproject.com/Articles/5205700/TCP-Application-Protocol-TCP-IP-based-Inter-proces)
 
-Code Artist 2017  
+Code Artist 2017 - 2021  
 www.codearteng.com
-

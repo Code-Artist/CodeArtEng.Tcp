@@ -39,12 +39,13 @@
             this.TxtHostName = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.BtAutoSum = new System.Windows.Forms.Button();
+            this.BtSetup = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.TxtTimeout = new System.Windows.Forms.TextBox();
             this.CbClientType = new System.Windows.Forms.ComboBox();
             this.ClientProperty = new System.Windows.Forms.PropertyGrid();
-            this.BtSetup = new System.Windows.Forms.Button();
-            this.BtAutoSum = new System.Windows.Forms.Button();
+            this.BtTestTimeout = new System.Windows.Forms.Button();
             this.PnSendCommand.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -151,6 +152,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.BtTestTimeout);
             this.panel1.Controls.Add(this.BtAutoSum);
             this.panel1.Controls.Add(this.BtSetup);
             this.panel1.Controls.Add(this.label3);
@@ -166,6 +168,26 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(929, 32);
             this.panel1.TabIndex = 4;
+            // 
+            // BtAutoSum
+            // 
+            this.BtAutoSum.Location = new System.Drawing.Point(622, 4);
+            this.BtAutoSum.Name = "BtAutoSum";
+            this.BtAutoSum.Size = new System.Drawing.Size(75, 23);
+            this.BtAutoSum.TabIndex = 9;
+            this.BtAutoSum.Text = "Sum";
+            this.BtAutoSum.UseVisualStyleBackColor = true;
+            this.BtAutoSum.Click += new System.EventHandler(this.BtAutoSum_Click);
+            // 
+            // BtSetup
+            // 
+            this.BtSetup.Location = new System.Drawing.Point(544, 4);
+            this.BtSetup.Name = "BtSetup";
+            this.BtSetup.Size = new System.Drawing.Size(75, 23);
+            this.BtSetup.TabIndex = 8;
+            this.BtSetup.Text = "Setup";
+            this.BtSetup.UseVisualStyleBackColor = true;
+            this.BtSetup.Click += new System.EventHandler(this.BtAuto1_Click);
             // 
             // label3
             // 
@@ -207,25 +229,15 @@
             this.ClientProperty.Size = new System.Drawing.Size(254, 461);
             this.ClientProperty.TabIndex = 5;
             // 
-            // BtSetup
+            // BtTestTimeout
             // 
-            this.BtSetup.Location = new System.Drawing.Point(544, 4);
-            this.BtSetup.Name = "BtSetup";
-            this.BtSetup.Size = new System.Drawing.Size(75, 23);
-            this.BtSetup.TabIndex = 8;
-            this.BtSetup.Text = "Setup";
-            this.BtSetup.UseVisualStyleBackColor = true;
-            this.BtSetup.Click += new System.EventHandler(this.BtAuto1_Click);
-            // 
-            // BtAutoSum
-            // 
-            this.BtAutoSum.Location = new System.Drawing.Point(622, 4);
-            this.BtAutoSum.Name = "BtAutoSum";
-            this.BtAutoSum.Size = new System.Drawing.Size(75, 23);
-            this.BtAutoSum.TabIndex = 9;
-            this.BtAutoSum.Text = "Sum";
-            this.BtAutoSum.UseVisualStyleBackColor = true;
-            this.BtAutoSum.Click += new System.EventHandler(this.BtAutoSum_Click);
+            this.BtTestTimeout.Location = new System.Drawing.Point(703, 4);
+            this.BtTestTimeout.Name = "BtTestTimeout";
+            this.BtTestTimeout.Size = new System.Drawing.Size(51, 23);
+            this.BtTestTimeout.TabIndex = 10;
+            this.BtTestTimeout.Text = "Test";
+            this.BtTestTimeout.UseVisualStyleBackColor = true;
+            this.BtTestTimeout.Click += new System.EventHandler(this.BtTestTimeout_Click);
             // 
             // MainForm
             // 
@@ -266,5 +278,6 @@
         private System.Windows.Forms.CheckBox ChkCRLF;
         private System.Windows.Forms.Button BtSetup;
         private System.Windows.Forms.Button BtAutoSum;
+        private System.Windows.Forms.Button BtTestTimeout;
     }
 }

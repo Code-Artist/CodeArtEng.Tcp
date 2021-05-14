@@ -124,7 +124,7 @@ namespace CodeArtEng.Tcp.Tests
             finally { Client.DataReceived -= Client_DataReceived; }
         }
 
-        //[Test]
+        [Test]
         public void ClientConnectionStatusChangedEvent()
         {
             try

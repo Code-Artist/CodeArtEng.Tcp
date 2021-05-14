@@ -12,8 +12,19 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ClientConnect_InvalidServer_SocketException()
         {
+
             TcpClient client = new TcpClient("127.0.0.1", 1000);
-            Assert.Throws<SocketException>(() => { client.Connect(); });
+
+            //.NET 5.0 and .NET 6.0 throw SocketExceptionFactory+ExtendedSocketException, derrived from SocketException
+            //Assert.Throws<SocketException>(() => { client.Connect(); });
+            try { client.Connect(); }
+            catch (SocketException)
+            {
+                Assert.Pass();
+                return;
+            }
+
+            Assert.Fail();
         }
 
         [Test]

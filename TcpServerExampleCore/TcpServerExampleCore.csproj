@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>TcpServerExample</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CodeArtEng.Tcp.Tests\TcpAppServerSamplePlugin.cs" Link="TcpAppServerSamplePlugin.cs" />
+    <Compile Include="..\CodeArtEng.Tcp.Tests\TcpAppServerSimpleMath.cs" Link="TcpAppServerSimpleMath.cs" />
+    <Compile Include="..\TcpServerExample\Form1.cs" Link="Form1.cs" />
+    <Compile Include="..\TcpServerExample\Form1.Designer.cs" Link="Form1.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeArtEng.Tcp.WinForms\CodeArtEng.Tcp.WinForms.csproj" />
+    <ProjectReference Include="..\CodeArtEng.Tcp\CodeArtEng.Tcp.csproj" />
+  </ItemGroup>
+
+</Project>

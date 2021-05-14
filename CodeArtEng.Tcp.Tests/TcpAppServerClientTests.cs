@@ -158,7 +158,7 @@ namespace CodeArtEng.Tcp.Tests
             {
                 Client.Connect();
                 TClient2.Start();
-                //TClient3.Start();
+                TClient3.Start();
                 for (int x = 0; x < 15; x++)
                 {
                     Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 900").Status == TcpAppCommandStatus.OK);
@@ -167,11 +167,12 @@ namespace CodeArtEng.Tcp.Tests
             finally
             {
                 Client.Disconnect();
-                TClient2.Abort();
-                //TClient3.Abort();
+                C2ThreadAbort = C3ThreadAbort = true;
+                Thread.Sleep(2000);
             }
         }
 
+        private bool C2ThreadAbort = false;
         public void Client2Execution()
         {
             TcpAppClient client = new TcpAppClient("localhost", 25000);
@@ -185,11 +186,10 @@ namespace CodeArtEng.Tcp.Tests
                     break;
                 }
             }
-            while (true) { client.ExecuteCommand("CheckStatus"); Thread.Sleep(5000); }
-            //client.Disconnect();
-            //client.Dispose();
+            while (!C2ThreadAbort) { client.ExecuteCommand("CheckStatus"); Thread.Sleep(5000); }
         }
 
+        private bool C3ThreadAbort = false;
         public void Client3Execution()
         {
             TcpAppClient client = new TcpAppClient("localhost", 25000);
@@ -203,9 +203,40 @@ namespace CodeArtEng.Tcp.Tests
                     break;
                 }
             }
-            client.Disconnect();
-            client.Dispose();
+            while (!C3ThreadAbort) { client.ExecuteCommand("CheckStatus"); Thread.Sleep(5000); }
         }
 
+        [Test]
+        public void SendCommandServerTimeoutReturnERR()
+        {
+            int defaultTimeout = Server.ExecutionTimeout;
+            Server.ExecutionTimeout = 1000; //Simulate Server Timeout on 1 seconds
+            try
+            {
+                Client.Connect();
+                Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 5000", 10000).Status == TcpAppCommandStatus.ERR);
+            }
+            finally
+            {
+                Server.ExecutionTimeout = defaultTimeout; //Restore Settings
+            }
+        }
+
+        [Test, Order(0)]
+        public void SendCommandClientTimeout()
+        {
+            int defaultTimeout = Server.ExecutionTimeout;
+            Server.ExecutionTimeout = 1000; //Simulate Server Timeout on 1 seconds
+            try
+            {
+                Client.Connect();
+                Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 5000", 10000).Status == TcpAppCommandStatus.ERR);
+            }
+            finally
+            {
+                Server.ExecutionTimeout = defaultTimeout; //Restore Settings
+            }
+            Thread.Sleep(5000);
+        }
     }
 }

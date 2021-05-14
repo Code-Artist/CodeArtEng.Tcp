@@ -1,32 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net452;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net452;net5.0-Windows;net6.0-Windows</TargetFrameworks>
+    <UseWindowsForms>True</UseWindowsForms>
+    <RootNamespace>CodeArtEng.Tcp</RootNamespace>
     <Authors>Code Artist</Authors>
     <Company>Code Art Engineering</Company>
-    <Description>TCP Server and Client. TCP App Server and Client.
-Support .NET Framework 4.5, .NET 5.0 and .NET 6.0 (Preview)</Description>
+    <Description>WinForms components for CodeArtEnt.Tcp.
+Support .NET Framework 4.5, .NET 5.0 and .NET 6.0 (Preview)
+</Description>
     <Copyright>Copyright © Code Art Engineering 2021</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>CAELogoSmall.png</PackageIcon>
     <RepositoryUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
-    <PackageReleaseNotes>Support .NET 5.0 and .NET 6.0 (Preview), separated WinForms components to CodeArtEng.Tcp.Winforms</PackageReleaseNotes>
+    <PackageReleaseNotes>Support .NET 5.0 and .NET 6.0 (Preview)</PackageReleaseNotes>
     <Version>5.0.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</PackageProjectUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Compile Remove="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Properties\" />
+    <ProjectReference Include="..\CodeArtEng.Tcp\CodeArtEng.Tcp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

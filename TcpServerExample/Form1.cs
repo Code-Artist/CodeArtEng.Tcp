@@ -32,6 +32,7 @@ namespace TcpServerExample
                 WelcomeMessage = "Welcome to TCP Application Server. Copyright (C) Code Art Engineering."
             };
             AppServer.MaxClients = 5;
+            AppServer.ExecutionTimeout = 1000;
             AppServer.ClientConnected += AppServer_ClientConnected;
             AppServer.ClientDisconnected += AppServer_ClientDisconnected;
             AppServer.ClientSignedIn += AppServer_ClientInitialized;
@@ -178,14 +179,13 @@ namespace TcpServerExample
 
         private void Server_StateChanged(object sender, EventArgs e)
         {
-            if (Server.IsServerStarted) BtStart.Text = "Stop";
-            else BtStart.Text = "Start";
+            //if (Server.IsServerStarted) BtStart.Text = "Stop";
+            //else BtStart.Text = "Start";
         }
 
         private void BtStart_Click(object sender, EventArgs e)
         {
-            if (Server.IsServerStarted) Server.Stop();
-            else Server.Start(Convert.ToInt16(txtPort.Text));
+            Server.Start(Convert.ToInt16(txtPort.Text));
             propertyGrid1.Refresh();
         }
 
