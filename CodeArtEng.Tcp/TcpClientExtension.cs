@@ -29,8 +29,13 @@ namespace System.Net.Sockets
                 IPEndPoint clientEndPoint = sender.Client.LocalEndPoint as IPEndPoint;
                 if (clientEndPoint == null) return TcpState.Closed;
 
-                //Check and convert to IPV4 if client end point address is IPV6
-                IPAddress senderIPV4 = clientEndPoint.Address.IsIPv4MappedToIPv6 ? clientEndPoint.Address.MapToIPv4() : clientEndPoint.Address;
+                IPAddress senderIPV4 = clientEndPoint.Address;
+                if (OSIsWindow())
+                {
+                    //Check and convert to IPV4 if client end point address is IPV6 (Windows Only)
+                    if (clientEndPoint.Address.IsIPv4MappedToIPv6) senderIPV4 = clientEndPoint.Address.MapToIPv4();
+                }
+
                 int port = (sender.Client.LocalEndPoint as IPEndPoint).Port;
 
                 var prop =
@@ -42,6 +47,22 @@ namespace System.Net.Sockets
             catch { return TcpState.Unknown; }
         }
 
+        private static bool OSIsWindow()
+        {
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Win32NT:
+                case PlatformID.Win32Windows:
+                case PlatformID.WinCE:
+                case PlatformID.Win32S:
+                    return true;
 
+                case PlatformID.Unix:
+                case PlatformID.Xbox:
+                case PlatformID.MacOSX:
+                default:
+                    return false;
+            }
+        }
     }
 }
