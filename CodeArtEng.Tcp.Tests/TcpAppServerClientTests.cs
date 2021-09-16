@@ -161,14 +161,14 @@ namespace CodeArtEng.Tcp.Tests
                 TClient3.Start();
                 for (int x = 0; x < 15; x++)
                 {
-                    Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 900").Status == TcpAppCommandStatus.OK);
+                    Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 100").Status == TcpAppCommandStatus.OK);
                 }
             }
             finally
             {
                 Client.Disconnect();
                 C2ThreadAbort = C3ThreadAbort = true;
-                Thread.Sleep(2000);
+                Thread.Sleep(500);
             }
         }
 
@@ -179,7 +179,7 @@ namespace CodeArtEng.Tcp.Tests
             client.Connect();
             for (int x = 0; x < 10; x++)
             {
-                if (client.ExecuteCommand("Delay C2 800").Status == TcpAppCommandStatus.ERR)
+                if (client.ExecuteCommand("Delay C2 50").Status == TcpAppCommandStatus.ERR)
                 {
                     TestContext.Progress.WriteLine("C2 Terminated on Error!");
                     Assert.Fail();
@@ -196,7 +196,7 @@ namespace CodeArtEng.Tcp.Tests
             client.Connect();
             for (int x = 0; x < 10; x++)
             {
-                if (client.ExecuteCommand("Delay C3 900").Status == TcpAppCommandStatus.ERR)
+                if (client.ExecuteCommand("Delay C3 80").Status == TcpAppCommandStatus.ERR)
                 {
                     TestContext.Progress.WriteLine("C3 Terminated on Error!");
                     Assert.Fail();
@@ -236,7 +236,7 @@ namespace CodeArtEng.Tcp.Tests
             {
                 Server.ExecutionTimeout = defaultTimeout; //Restore Settings
             }
-            Thread.Sleep(5000);
+            Thread.Sleep(500);
         }
     }
 }

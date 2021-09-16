@@ -12,6 +12,7 @@ namespace CodeArtEng.Tcp.Tests
     {
         private TcpServer Server = new TcpServer();
         private TcpClient Client;
+        private int Port;
 
         private void TcpDelay() { Thread.Sleep(20); }
 
@@ -19,12 +20,12 @@ namespace CodeArtEng.Tcp.Tests
         public void Setup()
         {
             Debug.WriteLine("Test Fixture Setup");
-            int port = 12300;
+            Port = 12300;
             Server.MessageDelimiter = Convert.ToByte('\n');
-            Server.Start(port);
+            Server.Start(Port);
             Server.ClientConnected += Server_ClientConnected;
             TcpDelay();
-            Client = new TcpClient("127.0.0.1", port);
+            Client = new TcpClient("127.0.0.1", Port);
             Client.Connect();
             for (int x = 0; x < 10; x++)
             {
@@ -59,6 +60,13 @@ namespace CodeArtEng.Tcp.Tests
 
         [Test]
         public void ServerPort() { Assert.AreEqual(12300, Server.Port); }
+
+        [Test]
+        public void ServerConnectFailed()
+        {
+            TcpServer server2 = new TcpServer();
+            Assert.Throws<System.Net.Sockets.SocketException>(() => { server2.Start(Port); });
+        }
 
         [Test]
         public void ServerClientIPAddress()

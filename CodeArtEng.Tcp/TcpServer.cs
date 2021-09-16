@@ -41,7 +41,7 @@ namespace CodeArtEng.Tcp
     /// </summary>
     public class TcpServer : IDisposable
     {
-        private TcpListener listener;
+        private TcpListener Listener;
         private Thread ConnectionMonitoring = null;
 
         /// <summary>
@@ -153,11 +153,13 @@ namespace CodeArtEng.Tcp
         /// <remarks>
         /// Calling this function has no effect once server is started.
         /// </remarks>
+        /// <exception cref="SocketException">Unable to start TCP Server on selected port.</exception>
         public void Start(int port)
         {
             if (ConnectionMonitoring != null) return;
             Port = port;
-            listener = new TcpListener(IPAddress.Any, Port);
+            Listener = new TcpListener(IPAddress.Any, Port);
+            Listener.Start();
 
             Abort = false;
             ConnectionMonitoring = new Thread(MonitorIncomingConnection) { Name = "Connection Monitoring" };
@@ -204,7 +206,6 @@ namespace CodeArtEng.Tcp
 
         private void MonitorIncomingConnection()
         {
-            listener.Start();
             while (true)
             {
                 try
@@ -212,20 +213,20 @@ namespace CodeArtEng.Tcp
                     if (Abort)
                     {
                         //Terminating Server and Monitoring Loop
-                        listener.Stop();
+                        Listener.Stop();
                         Trace.WriteLine(Name + ": TCP Server Stopped.");
                         DisconnectAllClients();
                         return;
                     }
 
-                    if (!listener.Pending())
+                    if (!Listener.Pending())
                     {
                         Thread.Sleep(10);
                     }
                     else
                     {
 
-                        System.Net.Sockets.TcpClient client = listener.AcceptTcpClient();
+                        System.Net.Sockets.TcpClient client = Listener.AcceptTcpClient();
                         Trace.WriteLine(Name + ": New Connection Detected...");
 
                         if (MaxClients > 0)
