@@ -92,6 +92,9 @@ namespace CodeArtEng.Tcp
         /// Default value is 100ms
         /// </summary>
         public int InterMessageTimeout { get; set; } = 100;
+        /// <summary>
+        /// Message receive mode. See <see cref="TcpServerMessageEndMode"/>
+        /// </summary>
         public TcpServerMessageEndMode MessageReceivedEndMode { get; set; } = TcpServerMessageEndMode.Delimiter;
 
         private readonly List<TcpServerConnection> ActiveConnections = new List<TcpServerConnection>();
