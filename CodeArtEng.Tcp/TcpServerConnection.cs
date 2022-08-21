@@ -76,7 +76,11 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// IP address for connected client.
         /// </summary>
-        public IPAddress ClientIPAddress { get; private set; }
+        public IPAddress ClientIPAddress { get; private set; } = null;
+        /// <summary>
+        /// TCP Port for connected client;
+        /// </summary>
+        public int ClientPort { get; private set; } = 0;
         /// <summary>
         /// Delimiter character to split incoming message to mulitple string package.
         /// Each complete string which terminated with message delimiter will trigger 
@@ -118,6 +122,7 @@ namespace CodeArtEng.Tcp
             BufferSize = Client.ReceiveBufferSize;
             TcpStream = Client.GetStream();
             ClientIPAddress = ((IPEndPoint)Client.Client.RemoteEndPoint).Address;
+            ClientPort = ((IPEndPoint)Client.Client.RemoteEndPoint).Port;
 
             buffer = new byte[BufferSize];
             TcpStream.Flush();
