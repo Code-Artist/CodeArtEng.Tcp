@@ -1,6 +1,10 @@
 # CodeArtEng.Tcp
-CodeArtEng.Tcp is a .NET Tcp Server and Client implementation with multiple client handling written in C#.![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp)<br>
-CodeArtEng.Tcp.WinForms contains user controls for WinForms application. ![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp.WinForms)<br>
+<b>CodeArtEng.Tcp</b> is a .NET Tcp Server and Client implementation with multiple client handling written in C#.![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp)<br>
+<b>CodeArtEng.Tcp.WinForms</b> contains user controls for WinForms application. ![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp.WinForms)<br>
+
+## Components
+- [TCP Server](#TCP-Server): TCP Server with multiple clients handling capability
+- [TCP Client](#TCP-Client): TCP Client with connection and incoming data monitoring.
 
 ## TCP Server
 #### Features
@@ -57,7 +61,7 @@ private void Client_MessageReceived(object sender, MessageReceivedEventArgs e)
 }
 ```
 #### Disposing and Clean up
-Incoming connection monitoring handle by thread. 
+Incoming connection monitoring handle by thread.
 We recommend to always call the `Dispose()` method to properly terminate thread for unused object.
 
 ## TCP Client
