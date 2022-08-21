@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace CodeArtEng.Tcp
 {
@@ -18,11 +19,12 @@ namespace CodeArtEng.Tcp
     /// </summary>
     public class TcpAppServer : TcpServer
     {
-        //ToDo: Option for TcpAppServer to execute with / without thread.
+        //ToDo: Implement test cases for TcpApPServer without Command Queue.
 
         private long Counter = 0;
         /// <summary>
         /// Occur when TcpAppClient is about to sign in. Subscribe this event to decide if a client is allowed to connect.
+        /// 
         /// </summary>
         public event EventHandler<TcpAppServerExEventArgs> ClientSigningIn;
         /// <summary>
@@ -56,9 +58,17 @@ namespace CodeArtEng.Tcp
 
         private readonly List<TcpAppInputCommand> ResultQueue = new List<TcpAppInputCommand>();
         private readonly List<TcpAppInputCommand> CommandQueue = new List<TcpAppInputCommand>();
-        private readonly Thread CommandQueueThread;
+        private readonly Thread CommandQueueThread = null;
         private EventWaitHandle CommandQueueWaitSignal = new ManualResetEvent(false);
         private bool AbortCommandQueueThread = false;
+
+        /// <summary>
+        /// Check if command queue option enabled. Throw 
+        /// </summary>
+        private void CheckIfCommandQueueEnabled()
+        {
+            if (CommandQueueThread == null) throw new InvalidOperationException("Command queue not enabled! Configure in constructor.");
+        }
 
         /// <summary>
         /// Return list of queued commands
@@ -104,17 +114,20 @@ namespace CodeArtEng.Tcp
 
         /// <summary>
         /// Constructor
+        /// <paramref name="noCommandQueue">Option to disable command queue. Default is false</paramref>
         /// </summary>
-        public TcpAppServer() : base()
+        public TcpAppServer(bool noCommandQueue = false) : base()
         {
             MessageDelimiter = Convert.ToByte(Convert.ToChar(TcpAppCommon.Delimiter));
             base.ClientConnected += TcpAppServer_ClientConnected;
             base.ClientDisconnected += TcpAppServer_ClientDisconnected;
             base.ServerStopped += TcpAppServer_ServerStopped;
-            CommandQueueThread = new Thread(ExecuteQueuedCommandsAsync);
-            AbortCommandQueueThread = false;
-            CommandQueueThread.Start();
-
+            if (!noCommandQueue)
+            {
+                CommandQueueThread = new Thread(ExecuteQueuedCommandsAsync);
+                AbortCommandQueueThread = false;
+                CommandQueueThread.Start();
+            }
             //TcpAppServer Format: 
             // TX: TCP: <Command> [-Param0] [-Param1] ... [-ParamN]
             // RX: TCP: <Status> [Return Message]
@@ -129,7 +142,12 @@ namespace CodeArtEng.Tcp
                 {
                     //Assign Name
                     string machineName = sender.Command.Parameter("ConnectionID").Value?.Replace(" ", "_");
-                    if (string.IsNullOrEmpty(machineName)) machineName = sender.AppClient.Connection.ClientIPAddress.ToString();
+                    if (string.IsNullOrEmpty(machineName))
+                    {
+                        System.Net.IPAddress ClientIP = sender.AppClient.Connection.ClientIPAddress;
+                        try { machineName = System.Net.Dns.GetHostEntry(ClientIP).HostName; }
+                        catch { machineName = ClientIP.ToString(); }
+                    }
 
                     if (sender.AppClient.SignedIn)
                     {
@@ -145,6 +163,7 @@ namespace CodeArtEng.Tcp
 
                     TcpAppServerExEventArgs signInArg = new TcpAppServerExEventArgs(sender.AppClient) { Value = machineName };
                     ClientSigningIn?.Invoke(this, signInArg);
+
                     if (signInArg.Cancel == true)
                     {
                         sender.OutputMessage = signInArg.Reason;
@@ -181,7 +200,7 @@ namespace CodeArtEng.Tcp
                     }
 
                 },
-                TcpAppParameter.CreateParameter("ConnectionID", "Connection ID. If already exist, server will return an updated unique ID."));
+                TcpAppParameter.CreateOptionalParameter("ConnectionID", "Connection ID. If already exist, server will return an updated unique ID.", string.Empty));
             RegisterSystemCommand("SignOut", "Signout TcpAppClient.", delegate (TcpAppInputCommand sender)
                 {
                     ClientSigningOut?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient));
@@ -246,117 +265,121 @@ namespace CodeArtEng.Tcp
                 }
             },
                 TcpAppParameter.CreateParameter("Alias", "Plugin Alias Name."));
-            RegisterSystemCommand("CheckStatus", "Check execution status for queued command. RETURN: Command status if executed, else BUSY. ERR if no queued message.",
-                delegate (TcpAppInputCommand sender)
-                {
-                    int queueID = Convert.ToInt32(sender.Command.Parameter("QueueID").Value);
-                    if (queueID == 0)
+
+            if (CommandQueueThread != null)
+            {
+                RegisterSystemCommand("CheckStatus", "Check execution status for queued command. RETURN: Command status if executed, else BUSY. ERR if no queued message.",
+                    delegate (TcpAppInputCommand sender)
                     {
-                        //ID not specified, get status for next queued command.
-                        if (sender.AppClient.NextQueuedCommand == null)
+                        int queueID = Convert.ToInt32(sender.Command.Parameter("QueueID").Value);
+                        if (queueID == 0)
                         {
-                            sender.Status = TcpAppCommandStatus.ERR;
-                            sender.OutputMessage = "No queued message!";
-                            return;
-                        }
-
-                        sender.Status = sender.AppClient.NextQueuedCommand.Status;
-                        switch (sender.AppClient.NextQueuedCommand.Status)
-                        {
-                            case TcpAppCommandStatus.BUSY:
-                            case TcpAppCommandStatus.QUEUED:
-                                sender.OutputMessage = string.Empty;
-                                break;
-
-                            default:
-                                lock (CommandQueue)
-                                {
-                                    //Return result for all queued message except executing one.
-                                    TcpAppInputCommand[] results = ResultQueue.Where(x => x.AppClient == sender.AppClient).ToArray();
-                                    TcpAppInputCommand nextQueue = null;
-                                    foreach (TcpAppInputCommand cmd in results)
-                                    {
-                                        if (cmd.Status == TcpAppCommandStatus.BUSY || cmd.Status == TcpAppCommandStatus.QUEUED)
-                                        {
-                                            nextQueue = cmd;
-                                            break;
-                                        }
-                                        if (cmd.Status == TcpAppCommandStatus.ERR)
-                                        {
-                                            cmd.Status = sender.Status;
-                                            cmd.OutputMessage += "! "; //Prefix for command with error status.
-                                        }
-                                        ResultQueue.Remove(cmd);
-                                        sender.OutputMessage += cmd.OutputMessage + "\n";
-                                    }
-
-                                    //Return number of remaining queued commands
-                                    sender.OutputMessage += CommandQueue.Where(x => x.AppClient == sender.AppClient).Count().ToString();
-                                    sender.AppClient.NextQueuedCommand = nextQueue;
-                                }
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        //Return status of specific message.
-                        TcpAppInputCommand ptrCmd = CommandQueue.FirstOrDefault(x => x.AppClient == sender.AppClient && x.ID == queueID);
-                        if (ptrCmd == null)
-                        {
-                            ptrCmd = ResultQueue.FirstOrDefault(x => x.AppClient == sender.AppClient);
-                            if (ptrCmd != null) ResultQueue.Remove(ptrCmd);
-                            else
+                            //ID not specified, get status for next queued command.
+                            if (sender.AppClient.NextQueuedCommand == null)
                             {
                                 sender.Status = TcpAppCommandStatus.ERR;
-                                sender.OutputMessage = "Invalid ID: " + queueID.ToString();
+                                sender.OutputMessage = "No queued message!";
                                 return;
                             }
-                        }
 
-                        sender.OutputMessage = ptrCmd.OutputMessage;
-                        sender.Status = ptrCmd.Status;
-                    }
-                },
-                TcpAppParameter.CreateOptionalParameter("QueueID", "Get status of specific message.", "0"));
-            RegisterSystemCommand("Abort", "Abort last queued command.", delegate (TcpAppInputCommand sender)
-            {
-                VerifyUserSignedIn(sender);
-                if (sender.AppClient.NextQueuedCommand != null)
-                {
-                    lock (CommandQueue)
-                    {
-                        CommandQueue.Remove(sender.AppClient.NextQueuedCommand);
-                        ResultQueue.Remove(sender.AppClient.NextQueuedCommand);
-                        sender.AppClient.NextQueuedCommand = null;
-                    }
-                }
-                sender.Status = TcpAppCommandStatus.OK;
-            });
-            RegisterSystemCommand("FlushQueue", "Flush message queue for calling client.", delegate (TcpAppInputCommand sender)
-                {
-                    VerifyUserSignedIn(sender);
-                    lock (CommandQueue)
-                    {
-                        CommandQueue.RemoveAll(x => x.AppClient == sender.AppClient);
-                        ResultQueue.RemoveAll(x => x.AppClient == sender.AppClient);
-                        sender.AppClient.NextQueuedCommand = null;
-                    }
-                    sender.Status = TcpAppCommandStatus.OK;
-                });
-            RegisterSystemCommand("FlushAllQueue", "Flush message queue for all clients.", delegate (TcpAppInputCommand sender)
-                {
-                    VerifyUserSignedIn(sender);
-                    lock (CommandQueue)
-                    {
-                        CommandQueue.Clear();
-                        ResultQueue.Clear();
-                        lock (AppClients)
+                            sender.Status = sender.AppClient.NextQueuedCommand.Status;
+                            switch (sender.AppClient.NextQueuedCommand.Status)
+                            {
+                                case TcpAppCommandStatus.BUSY:
+                                case TcpAppCommandStatus.QUEUED:
+                                    sender.OutputMessage = "Queue Length = " + CommandQueue.Count();
+                                    break;
+
+                                default:
+                                    lock (CommandQueue)
+                                    {
+                                        //Return result for all queued message except executing one.
+                                        TcpAppInputCommand[] results = ResultQueue.Where(x => x.AppClient == sender.AppClient).ToArray();
+                                        TcpAppInputCommand nextQueue = null;
+                                        foreach (TcpAppInputCommand cmd in results)
+                                        {
+                                            if (cmd.Status == TcpAppCommandStatus.BUSY || cmd.Status == TcpAppCommandStatus.QUEUED)
+                                            {
+                                                nextQueue = cmd;
+                                                break;
+                                            }
+                                            if (cmd.Status == TcpAppCommandStatus.ERR)
+                                            {
+                                                cmd.Status = sender.Status;
+                                                cmd.OutputMessage += "! "; //Prefix for command with error status.
+                                            }
+                                            ResultQueue.Remove(cmd);
+                                            sender.OutputMessage += cmd.OutputMessage + "\n";
+                                        }
+
+                                        //Return number of remaining queued commands
+                                        sender.OutputMessage += CommandQueue.Where(x => x.AppClient == sender.AppClient).Count().ToString();
+                                        sender.AppClient.NextQueuedCommand = nextQueue;
+                                    }
+                                    break;
+                            }
+                        }
+                        else
                         {
-                            foreach (TcpAppServerConnection client in AppClients) client.NextQueuedCommand = null;
+                            //Return status of specific message.
+                            TcpAppInputCommand ptrCmd = CommandQueue.FirstOrDefault(x => x.AppClient == sender.AppClient && x.ID == queueID);
+                            if (ptrCmd == null)
+                            {
+                                ptrCmd = ResultQueue.FirstOrDefault(x => x.AppClient == sender.AppClient);
+                                if (ptrCmd != null) ResultQueue.Remove(ptrCmd);
+                                else
+                                {
+                                    sender.Status = TcpAppCommandStatus.ERR;
+                                    sender.OutputMessage = "Invalid ID: " + queueID.ToString();
+                                    return;
+                                }
+                            }
+
+                            sender.OutputMessage = ptrCmd.OutputMessage;
+                            sender.Status = ptrCmd.Status;
+                        }
+                    },
+                    TcpAppParameter.CreateOptionalParameter("QueueID", "Get status of specific message.", "0"));
+                RegisterSystemCommand("Abort", "Abort last queued command.", delegate (TcpAppInputCommand sender)
+                {
+                    VerifyUserSignedIn(sender);
+                    if (sender.AppClient.NextQueuedCommand != null)
+                    {
+                        lock (CommandQueue)
+                        {
+                            CommandQueue.Remove(sender.AppClient.NextQueuedCommand);
+                            ResultQueue.Remove(sender.AppClient.NextQueuedCommand);
+                            sender.AppClient.NextQueuedCommand = null;
                         }
                     }
                     sender.Status = TcpAppCommandStatus.OK;
                 });
+                RegisterSystemCommand("FlushQueue", "Flush message queue for calling client.", delegate (TcpAppInputCommand sender)
+                    {
+                        VerifyUserSignedIn(sender);
+                        lock (CommandQueue)
+                        {
+                            CommandQueue.RemoveAll(x => x.AppClient == sender.AppClient);
+                            ResultQueue.RemoveAll(x => x.AppClient == sender.AppClient);
+                            sender.AppClient.NextQueuedCommand = null;
+                        }
+                        sender.Status = TcpAppCommandStatus.OK;
+                    });
+                RegisterSystemCommand("FlushAllQueue", "Flush message queue for all clients.", delegate (TcpAppInputCommand sender)
+                    {
+                        VerifyUserSignedIn(sender);
+                        lock (CommandQueue)
+                        {
+                            CommandQueue.Clear();
+                            ResultQueue.Clear();
+                            lock (AppClients)
+                            {
+                                foreach (TcpAppServerConnection client in AppClients) client.NextQueuedCommand = null;
+                            }
+                        }
+                        sender.Status = TcpAppCommandStatus.OK;
+                    });
+            }
 
             //--- PLUGIN ---
             RegisterSystemCommand("PluginTypes?", "Get list of plugin class type. Use CreatePlugins command to instantiate type.", delegate (TcpAppInputCommand sender)
@@ -435,8 +458,6 @@ namespace CodeArtEng.Tcp
                     }
                 },
                 TcpAppParameter.CreateParameter("Alias", "Plugin alias name."));
-
-
         }
 
         private void VerifyUserSignedIn(TcpAppInputCommand command)
@@ -470,6 +491,7 @@ namespace CodeArtEng.Tcp
         /// <param name="parameters"></param>
         public void RegisterQueuedCommand(string command, string description, TcpAppServerExecuteDelegate executeCallback, params TcpAppParameter[] parameters)
         {
+            CheckIfCommandQueueEnabled();
             RegisterCommandInt(command, description, executeCallback, parameters).UseMessageQueue = true;
         }
 
@@ -543,6 +565,35 @@ namespace CodeArtEng.Tcp
             }
             finally { ptrPlugin.DisposeRequest(); }
         }
+        
+        /// <summary>
+        /// Register all plugins from all loaded assemblies. Skip plugin if type already registered.
+        /// </summary>
+        /// <returns></returns>
+        public string [] RegisterPlugins()
+        {
+            List<string> results = new List<string>();
+            foreach(Assembly a in AppDomain.CurrentDomain.GetAssemblies() )
+            {
+                foreach(Type t in a.GetTypes())
+                {
+                    if(t.GetInterfaces().Contains(typeof(ITcpAppServerPlugin)))
+                    {
+                        if (PluginTypes.FirstOrDefault(x => x.Type == t) != null)
+                        {
+                            //Plugin already registered 
+                            Trace.WriteLine("TcpAppServer: Plugin " + t.ToString() + " already registered!");
+                        }
+                        else
+                        {
+                            RegisterPluginType(t);
+                            results.Add(t.ToString());
+                        }
+                    }
+                }
+            }
+            return results.ToArray();   
+        }
 
         /// <summary>
         /// Add plugin object directly from TcpAppServer by code.
@@ -570,6 +621,10 @@ namespace CodeArtEng.Tcp
             _Plugins.Remove(plugin);
         }
 
+        /// <summary>
+        /// Show Application Header. Implement by derived class.
+        /// </summary>
+        /// <returns></returns>
         protected virtual string OnShowHelpGetApplicationHeader() { return string.Empty; }
 
         private void ShowHelp(TcpAppInputCommand sender)

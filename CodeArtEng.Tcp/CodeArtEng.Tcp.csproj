@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net452;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
     <Authors>Code Artist</Authors>
     <Company>Code Art Engineering</Company>
     <Description>TCP Server and Client. TCP App Server and Client.
@@ -12,9 +12,11 @@ Support .NET Framework 4.5, .NET 5.0 and .NET 6.0 (Preview)</Description>
     <RepositoryUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
     <PackageReleaseNotes>Support .NET 5.0 and .NET 6.0 (Preview), separated WinForms components to CodeArtEng.Tcp.Winforms</PackageReleaseNotes>
-    <Version>5.0.1</Version>
+    <Version>5.0.2</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</PackageProjectUrl>
+    <AssemblyVersion>5.0.2.0</AssemblyVersion>
+    <FileVersion>5.0.2.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net452|AnyCPU'">

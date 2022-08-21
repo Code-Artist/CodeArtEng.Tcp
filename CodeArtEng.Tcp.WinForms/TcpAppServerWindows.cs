@@ -7,8 +7,14 @@ using System.Windows.Forms;
 
 namespace CodeArtEng.Tcp
 {
+    /// <summary>
+    /// TCP Application Server implementation for WinForms Application.
+    /// </summary>
     public class TcpAppServerWindows : TcpAppServer
     {
+        /// <summary>
+        /// Create TCP ApplicatioN Server for WinForms application and register WinForms specific commands.
+        /// </summary>
         public TcpAppServerWindows() : base()
         {
             RegisterSystemCommand("ApplicationName?", "Get Application Name.", delegate (TcpAppInputCommand sender)
@@ -23,6 +29,10 @@ namespace CodeArtEng.Tcp
             });
         }
 
+        /// <summary>
+        /// Show product name and application version
+        /// </summary>
+        /// <returns></returns>
         protected override string OnShowHelpGetApplicationHeader()
         {
             return Application.ProductName + " V" + Application.ProductVersion.ToString();

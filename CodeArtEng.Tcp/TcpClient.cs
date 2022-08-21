@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -27,7 +28,7 @@ namespace CodeArtEng.Tcp
         /// Default is FALSE.
         /// </summary>
         public bool SuspendDataReceivedEvent { get; set; } = false;
-        
+
         /// <summary>
         /// Occurs when incoming message is detected on input message buffer, cross thread event.
         /// </summary>
@@ -235,12 +236,11 @@ namespace CodeArtEng.Tcp
             lock (LockHandler)
             {
                 if (!Connected) Reconnect();
-
-                DateTime tStart = DateTime.Now;
                 return ReadRawBytes();
             }
         }
 
+        //ToDo: Interbytes timeout?
         private byte[] ReadRawBytes()
         {
             TcpStream.ReadTimeout = ReadTimeout;
@@ -286,29 +286,20 @@ namespace CodeArtEng.Tcp
 
         private void MonitorIncomingData()
         {
-            bool incomingData = false;
             EventHandler<TcpDataReceivedEventArgs> DataReceivedHandler;
             while (MonitoringThreadActive) //Loop forever
             {
                 DataReceivedHandler = DataReceived;
                 if (DataReceivedHandler != null)
                 {
-                    if (!incomingData)
+                    bool dataAvailable = TcpStream.DataAvailable;
+                    if (dataAvailable)
                     {
-                        if (TcpStream.DataAvailable)
+                        lock (LockHandler)
                         {
-                            lock (LockHandler)
-                            {
-                                incomingData = true;
-                                byte[] data = ReadRawBytes();
-                                if (data.Length > 0) DataReceivedHandler.Invoke(this, new TcpDataReceivedEventArgs() { Data = data });
-                            }
+                            byte[] data = ReadRawBytes();
+                            if (data.Length > 0) DataReceivedHandler.Invoke(this, new TcpDataReceivedEventArgs() { Data = data });
                         }
-                    }
-                    else
-                    {
-                        if (!TcpStream.DataAvailable)
-                            incomingData = false;
                     }
                 }
                 Thread.Sleep(50);

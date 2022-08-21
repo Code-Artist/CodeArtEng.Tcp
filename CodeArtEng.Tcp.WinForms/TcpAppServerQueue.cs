@@ -11,7 +11,7 @@ using System.Windows.Forms;
 namespace CodeArtEng.Tcp
 {
     /// <summary>
-    /// TCP Application Server Queue Visualizer
+    /// TCP Application Server Queue Visualizer for WinForms
     /// </summary>
     public partial class TcpAppServerQueue : UserControl
     {

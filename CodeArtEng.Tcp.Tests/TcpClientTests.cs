@@ -1,8 +1,10 @@
 ﻿using NUnit.Framework;
 using System;
+using System.IO;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Text;
 
 namespace CodeArtEng.Tcp.Tests
 {
@@ -10,7 +12,7 @@ namespace CodeArtEng.Tcp.Tests
     [TestFixture]
     public class TcpClientTests
     {
-        private void TcpDelay() { Thread.Sleep(10); }
+        private void TcpDelay() { } //Thread.Sleep(1); }  //Machine dependent?
         private readonly TcpServer Server = new TcpServer();
         private TcpClient Client;
 
@@ -56,7 +58,7 @@ namespace CodeArtEng.Tcp.Tests
             Debug.WriteLine("EVENT: Client_MessageReceived");
             string MessageReceiveBuffer = e.ReceivedMessage;
             Debug.WriteLine("RX: " + e.ReceivedMessage);
-            e.Client.WriteToClient("Server [" + MessageReceiveBuffer + "] ACK.");
+            e.Client.WriteToClient(MessageReceiveBuffer);
         }
 
         [Test]
@@ -74,18 +76,20 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void CommunicateWithServer()
         {
-            Client.Write("Message from Client\t");
+            string message = "Message from Client";
+            Client.Write(message + "\t");
             TcpDelay();
             string returnString = Client.ReadString();
-            Assert.AreEqual("Server [Message from Client] ACK.", returnString);
+            Assert.AreEqual(message, returnString);
         }
 
         [Test]
         public void CommunicateWithServerBytes()
         {
-            Client.Write("Message from Client\t");
+            string message = "Message from Client";
+            Client.Write(message + "\t");
             TcpDelay();
-            Assert.IsTrue(Client.ReadBytes().Count() != 0);
+            Assert.AreEqual(message.Length, Client.ReadBytes().Count());
         }
 
         [Test]
@@ -153,6 +157,57 @@ namespace CodeArtEng.Tcp.Tests
         private void Client_ConnectionStatusChanged(object sender, EventArgs e)
         {
             ConnectionStatusChangedEventRaised = true;
+        }
+
+        [Test]
+        public void SendBigData()
+        {
+            Client.DataReceived += Client_DataReceived;
+            try
+            {
+                DataReceiveEventRaised = false;
+                DataReceived = string.Empty;
+                ReadDataByEvent = true;
+                
+                string file = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "../../../TestData", "Log_153KB.txt"));
+                string contents = File.ReadAllText(file);
+                Client.Write(contents + "\t");
+                Thread.Sleep(200);
+                Assert.AreEqual(contents.Length, DataReceived?.Length);
+            }
+            finally { Client.DataReceived -= Client_DataReceived; }
+
+        }
+
+        [Test]
+        public void ReceiveEndByTimoutMode_SendSlowCommand()
+        {
+            Client.DataReceived += Client_DataReceived;
+            string message = "Testing";
+            try
+            {
+                DataReceiveEventRaised = false;
+                DataReceived = string.Empty;
+                ReadDataByEvent = true;
+
+                Server.InterMessageTimeout = 100;
+                Server.MessageReceivedEndMode = TcpServerMessageEndMode.Timeout;
+                for(int x=0; x < message.Length; x++)
+                {
+                    Client.Write(message.Substring(x, 1));
+                    Assert.IsFalse(DataReceiveEventRaised);
+                    Thread.Sleep(10);
+                }
+                Thread.Sleep(200);
+                Assert.IsTrue(DataReceiveEventRaised);
+                Assert.AreEqual(message, DataReceived);
+
+            }
+            finally
+            {
+                Client.DataReceived -= Client_DataReceived;
+                Server.MessageReceivedEndMode = TcpServerMessageEndMode.Delimiter;
+            }
         }
     }
 }

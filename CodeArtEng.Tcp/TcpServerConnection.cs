@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 namespace CodeArtEng.Tcp
 {
@@ -56,9 +60,18 @@ namespace CodeArtEng.Tcp
         private readonly System.Net.Sockets.TcpClient Client;
         private NetworkStream TcpStream;
         private readonly int BufferSize;
+        /// <summary>
+        /// Current Read Iteration Buffer
+        /// </summary>
         private readonly byte[] buffer;
-        private string Message;
+        /// <summary>
+        /// Collective Buffer
+        /// </summary>
         private readonly List<byte> MessageBuffer;
+        /// <summary>
+        /// Final Message in string.
+        /// </summary>
+        private string Message;
 
         /// <summary>
         /// IP address for connected client.
@@ -70,7 +83,7 @@ namespace CodeArtEng.Tcp
         /// the <see cref="TcpServerConnection.MessageReceived"/> once.
         /// </summary>
         /// <remarks>The value is assigned by <see cref="TcpServer"/></remarks>
-        public byte MessageDelimiter { get; internal set; }
+        public byte MessageDelimiter { get => Parent.MessageDelimiter; }
 
         /// <summary>
         /// Occurs when client is disconnected from server.
@@ -94,8 +107,13 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public bool Connected { get; private set; } = true;
 
-        internal TcpServerConnection(System.Net.Sockets.TcpClient client)
+        internal TcpServer Parent { get; private set; }
+
+        internal TcpServerConnection(TcpServer sender, System.Net.Sockets.TcpClient client)
         {
+            Parent = sender;
+            if (sender == null) throw new ArgumentNullException("sender");
+
             Client = client;
             BufferSize = Client.ReceiveBufferSize;
             TcpStream = Client.GetStream();
@@ -159,16 +177,19 @@ namespace CodeArtEng.Tcp
             TcpStream.BeginRead(buffer, 0, BufferSize, EndRead, TcpStream);
         }
 
+        private Thread ReceiveTimer = null;
+        private int ReceiveTimerTimeout, ReceiveTimerInterval;
+        private DateTime LastRead;
         private void EndRead(IAsyncResult result)
         {
             try
             {
-                if(TcpStream == null)
+                if (TcpStream == null)
                 {
                     ClientDisconnected?.Invoke(this, null);
                     return;
                 }
-                
+
                 int byteRead = TcpStream.EndRead(result);
                 if (byteRead == 0)
                 {
@@ -178,26 +199,63 @@ namespace CodeArtEng.Tcp
                 }
                 else
                 {
-                    //Debug.WriteLine("Received " + byteRead + " bytes.");
                     BytesReceived?.Invoke(this, new TcpServerDataEventArgs(this, buffer, byteRead));
-
-                    //Build string until delimeter character is detected.
                     EventHandler<MessageReceivedEventArgs> OnMessageReceived = MessageReceived;
-                    for (int x = 0; x < byteRead; x++)
+                    switch (Parent.MessageReceivedEndMode)
                     {
-                        byte b = buffer[x];
-                        if (b != MessageDelimiter)
-                        {
-                            MessageBuffer.Add(b);
-                        }
-                        else
-                        {
-                            byte[] messageBytes = MessageBuffer.ToArray();
-                            Message = Encoding.ASCII.GetString(messageBytes);
-                            MessageBuffer.Clear();
-                            OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
-                            ProcessReceivedMessageCallback?.Invoke(this, Message, messageBytes);
-                        }
+                        case TcpServerMessageEndMode.Delimiter:
+                            {
+                                //Build string until delimeter character is detected.
+                                for (int x = 0; x < byteRead; x++)
+                                {
+                                    byte b = buffer[x];
+                                    if (b != MessageDelimiter)
+                                    {
+                                        MessageBuffer.Add(b);
+                                    }
+                                    else
+                                    {
+                                        byte[] messageBytes = MessageBuffer.ToArray();
+                                        Message = Encoding.ASCII.GetString(messageBytes);
+                                        MessageBuffer.Clear();
+                                        OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
+                                        ProcessReceivedMessageCallback?.Invoke(this, Message, messageBytes);
+                                    }
+                                }
+                            }
+                            break;
+
+                        case TcpServerMessageEndMode.Timeout:
+                            {
+                                if(ReceiveTimer == null)
+                                {
+                                    LastRead = DateTime.Now;
+                                    ReceiveTimerTimeout = Parent.InterMessageTimeout;
+                                    ReceiveTimerInterval = Math.Max(1, ReceiveTimerTimeout / 10);
+                                    ReceiveTimer = new Thread(delegate ()
+                                    {
+                                        while((DateTime.Now - LastRead).TotalMilliseconds < ReceiveTimerTimeout)
+                                        {
+                                            Thread.Sleep(ReceiveTimerInterval);
+                                        }
+                                        byte[] messageBytes = MessageBuffer.ToArray();
+                                        Message = Encoding.ASCII.GetString(messageBytes);
+                                        MessageBuffer.Clear();
+                                        OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs() { Client = this, ReceivedMessage = Message, ReceivedBytes = messageBytes });
+                                        ProcessReceivedMessageCallback?.Invoke(this, Message, messageBytes);
+                                        Debug.WriteLine("InterMessage Timeout Reached!");
+
+                                    });
+                                    ReceiveTimer.Start();
+                                    Debug.WriteLine("Started new Read...");
+                                }
+
+                                MessageBuffer.AddRange(buffer.Take(byteRead)); //ToDo: Buffer add specific length,but not full buffer.
+                                Debug.WriteLine("MessageBuffer = " + ASCIIEncoding.ASCII.GetString(MessageBuffer.ToArray(), 0, MessageBuffer.Count));
+                                LastRead = DateTime.Now;
+
+                            }
+                            break;
                     }
                     BeginRead();
                 }

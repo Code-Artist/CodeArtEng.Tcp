@@ -14,14 +14,20 @@ namespace CodeArtEng.Tcp.Tests
         private TcpAppServer Server = new TcpAppServerWindows();
         private TcpAppClient Client = new TcpAppClient("localhost", 25000);
 
+        private TcpAppServer ServerNoQueue = new TcpAppServer(true);
+        private TcpAppClient ClientNoQueue = new TcpAppClient("localhost", 25001);
+
         [OneTimeSetUp]
         public void Setup()
         {
             Server.Start(25000);
+            ServerNoQueue.Start(25001);
             System.Threading.Thread.Sleep(100);
             Client.Connect();
+            ClientNoQueue.Connect();
             System.Threading.Thread.Sleep(100);
             Assert.AreEqual(1, Server.Clients.Count);
+            Assert.AreEqual(1, ServerNoQueue.Clients.Count);
             Debug.WriteLine("Fixture Setup Completed.");
         }
 
@@ -30,6 +36,9 @@ namespace CodeArtEng.Tcp.Tests
         {
             Server.Dispose(); Server = null;
             Client.Dispose(); Client = null;
+
+            ServerNoQueue.Dispose(); ServerNoQueue = null;
+            ClientNoQueue.Dispose(); ClientNoQueue = null;
             Debug.WriteLine("Fixture Tear Down Completed.");
         }
 
@@ -100,7 +109,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppCommandResult result = ExecuteCommand("ApplicationVersion?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.IsTrue(result.ReturnMessage.StartsWith("16"));  //NUnit Agent Version
+            Assert.IsTrue(result.ReturnMessage.Length > 0) ;  //NUnit Agent Version
         }
 
         [Test]
@@ -116,5 +125,21 @@ namespace CodeArtEng.Tcp.Tests
             Assert.Greater(lines.Count, 10);
         }
 
+
+        [Test]
+        public void AppServerNoQueue_FunctionCheck()
+        {
+            TcpAppCommandResult result = ClientNoQueue.ExecuteCommand("FunctionList?");
+            Assert.IsFalse(result.ReturnMessage.Contains("FlushQueue"));
+            Assert.IsFalse(result.ReturnMessage.Contains("CheckStatus"));
+        }
+
+        [Test]
+        public void AppServerNoQueue_RegisterQueueCommand_InvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => {
+                ServerNoQueue.RegisterQueuedCommand("Dummy Queue", "Queue", delegate{ });
+            });
+        }
     }
 }

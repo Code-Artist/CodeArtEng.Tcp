@@ -8,6 +8,8 @@ using System.Threading;
 
 namespace CodeArtEng.Tcp
 {
+    //ToDo: TcpClient, receive message without delimiter? Use timeout to predict end of message.
+
     /// <summary>
     /// Data class for <see cref="TcpServer.ClientConnected"/> 
     /// and <see cref="TcpServer.ClientDisconnected"/> events.
@@ -37,6 +39,21 @@ namespace CodeArtEng.Tcp
     }
 
     /// <summary>
+    /// TCP Server Message Receive End Mode
+    /// </summary>
+    public enum TcpServerMessageEndMode
+    {
+        /// <summary>
+        /// Message end when delimiter character detected. (Default)
+        /// </summary>
+        Delimiter,
+        /// <summary>
+        /// Message end by timeout.
+        /// </summary>
+        Timeout
+    }
+
+    /// <summary>
     /// TCP Server implementation with multiple clients handling capability
     /// </summary>
     public class TcpServer : IDisposable
@@ -57,27 +74,25 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public bool IsServerStarted { get { return ConnectionMonitoring != null; } }
 
-        private byte messageDelimiter = Convert.ToByte('\r');
         /// <summary>
-        /// Delimiter character to split incoming message to mulitple string package.
+        /// Delimiter character to split incoming message to mulitple string package when <see cref="MessageReceivedEndMode"/>
+        /// is set to <see cref="TcpServerMessageEndMode.Delimiter"/>
         /// Each complete string which terminated with message delimiter will trigger 
-        /// the <see cref="TcpServerConnection.MessageReceived"/> once. Default value is '\r' (0x0D)
+        /// the <see cref="TcpServerConnection.MessageReceived"/> once. Default value is '\r' (0x0D).
         /// </summary>
         /// <remarks>
         /// Recommended to set this property before server start.
         /// Writing to this property will overwrite the <see cref="TcpServerConnection.MessageDelimiter"/>  
         /// for each <see cref="ActiveConnections"/>.
         /// </remarks>
-        public byte MessageDelimiter
-        {
-            get { return messageDelimiter; }
-            set
-            {
-                messageDelimiter = value;
-                foreach (TcpServerConnection item in Clients)
-                    item.MessageDelimiter = value;
-            }
-        }
+        public byte MessageDelimiter { get; set; } = Convert.ToByte('\r');
+        /// <summary>
+        /// When <see cref="MessageReceivedEndMode"/> set to <see cref="TcpServerMessageEndMode.Timeout"/>,
+        /// Server will wait for defined timeout (ms) before trigger <see cref="TcpServerConnection.MessageReceived"/> event.
+        /// Default value is 100ms
+        /// </summary>
+        public int InterMessageTimeout { get; set; } = 100;
+        public TcpServerMessageEndMode MessageReceivedEndMode { get; set; } = TcpServerMessageEndMode.Delimiter;
 
         private readonly List<TcpServerConnection> ActiveConnections = new List<TcpServerConnection>();
         private bool Abort = false;
@@ -250,7 +265,7 @@ namespace CodeArtEng.Tcp
                         if (eArgs.Accept)
                         {
                             //Connection Accepted
-                            TcpServerConnection newConnection = new TcpServerConnection(client) { MessageDelimiter = MessageDelimiter };
+                            TcpServerConnection newConnection = new TcpServerConnection(this, client);
                             Trace.WriteLine(Name + ": Connection Accepted: Client = " + newConnection.ClientIPAddress);
                             newConnection.ClientDisconnected += OnClientDisconnected;
                             lock (ActiveConnections) { ActiveConnections.Add(newConnection); }

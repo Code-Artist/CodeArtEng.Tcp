@@ -38,8 +38,17 @@ namespace TcpAppClientTerminal
         {
             switch (CbClientType.SelectedIndex)
             {
-                case 0: ptrClient = AppClient; break;
-                case 1: ptrClient = TcpClient; break;
+                case 0:
+                    ptrClient = AppClient;
+                    TxtPort.Text = "12000";
+                    PnTcpAppClient.Enabled = true;
+                    break;
+
+                case 1:
+                    ptrClient = TcpClient;
+                    TxtPort.Text = "1000";
+                    PnTcpAppClient.Enabled = false;
+                    break;
                 default: throw new NotSupportedException("Not supported type!");
             }
             TxtTimeout.Enabled = (ptrClient == AppClient);
@@ -72,8 +81,15 @@ namespace TcpAppClientTerminal
                 AppendOutput(e.Message, Color.Lime);
         }
 
+
+        private delegate void AppendOutputDelegate(string message, Color textColor);
         private void AppendOutput(string message, Color textColor)
         {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new AppendOutputDelegate(AppendOutput), message, textColor);
+                return;
+            }
             TerminalOutput.SelectionStart = TerminalOutput.Text.Length;
             TerminalOutput.SelectionColor = textColor;
             TerminalOutput.AppendText(message);
@@ -198,11 +214,11 @@ namespace TcpAppClientTerminal
             {
                 System.Threading.Thread.Sleep(1000);
                 result = AppClient.ExecuteCommand(string.Format("m{0} SumQ {1} {2}", id, a, b), timeout);
-                if(result.Status == TcpAppCommandStatus.QUEUED)
+                if (result.Status == TcpAppCommandStatus.QUEUED)
                 {
                     do
                     {
-                        System.Threading.Thread.Sleep(1000);
+                        System.Threading.Thread.Sleep(200);
                         result = AppClient.ExecuteCommand("checkstatus", timeout);
                     } while (result.Status >= TcpAppCommandStatus.QUEUED);
                 }

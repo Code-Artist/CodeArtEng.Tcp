@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net452;net5.0-Windows;net6.0-Windows</TargetFrameworks>
+    <TargetFrameworks>net48;net6.0-Windows</TargetFrameworks>
     <UseWindowsForms>True</UseWindowsForms>
     <RootNamespace>CodeArtEng.Tcp</RootNamespace>
     <Authors>Code Artist</Authors>
@@ -18,6 +18,7 @@ Support .NET Framework 4.5, .NET 5.0 and .NET 6.0 (Preview)
     <Version>5.0.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</PackageProjectUrl>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

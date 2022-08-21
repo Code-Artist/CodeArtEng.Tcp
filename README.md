@@ -1,18 +1,13 @@
 # CodeArtEng.Tcp
-CodeArtEng.Tcp is a .NET Tcp Server and Client implementation with multiple client handling written in C#. ![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp)<br>
+CodeArtEng.Tcp is a .NET Tcp Server and Client implementation with multiple client handling written in C#.![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp)<br>
 CodeArtEng.Tcp.WinForms contains user controls for WinForms application. ![NuGet](https://img.shields.io/nuget/v/CodeArtEng.Tcp.WinForms)<br>
 
-TCP Server:
+## TCP Server
+#### Features
 - Multi-threaded TCP server with multi client support.
-- Detect client connect / disconnect.
-- Delimited message mode, ideal for instrument control.
+- Message Receive Mode: Delimiter / Timeout.
 
-TCP Client:
-- Read / Write bytes array / string to Server.
-- Check connection status with Server.
-
-#### USAGE
-<b>TCP Server</b>
+#### Quick Start
 ```C#
 private TCPServer Server;
 private void Init()
@@ -21,6 +16,17 @@ private void Init()
     Server.ServerStarted += Server_StateChanged; //Subscribe to Server Events
     Server.ServerStopped += Server_StateChanged;
     Server.ClientConnected += Server_ClientConnected;
+
+    //Configure how MessageReceived event should trigger
+    // A) Delimiter character mode (DEFAULT)
+    Server.MessageReceivedEndMode = TcpServerMessageEndMode.Delimiter;
+    Server.MessageDelimiter = Convert.ToByte('\n');
+
+    // OR
+    // B) Trigger by timeout between read cycle.
+
+    Server.MessageReceivedEndMode = TcpServerMessageEndMode.Timeout;
+    Server.InterMessageTimeout = 100; //Timeout 100ms
 }
 
 private void Server_ClientConnected(object sender, TcpServerEventArgs e)
@@ -30,50 +36,79 @@ private void Server_ClientConnected(object sender, TcpServerEventArgs e)
 
     //OR
 
-    //Subscribe to TCPServerConnection message received event to capture delimited string
+    //Subscribe to TCPServerConnection message received event to capture message string
     e.Client.MessageReceived += Client_MessageReceived;   
 }
 
 private void Client_BytesReceived(object sender, BytesReceivedEventArgs e)
 {
-    //Read from Client
-    byte [] data = e.Client.ReceivedBytes;
+    byte [] data = e.Client.ReceivedBytes; //Retrieve read content from Client
 
-    //Handle incoming messages from TCP Client.
+    //Handle incoming data from TCP Client.
 
-    //Write to Client
-    e.Client.WriteToClient("Message to Client.");
+    e.Client.WriteToClient("Message to Client."); //Write to Client
     ...
+  }
 
+private void Client_MessageReceived(object sender, MessageReceivedEventArgs e)
+{
+    string message = e.ReceivedMessage; //Handle incoming message string from TCP Client.
+    ...
+}
 ```
+#### Disposing and Clean up
+Incoming connection monitoring handle by thread. 
+We recommend to always call the `Dispose()` method to properly terminate thread for unused object.
 
-<b>TCP Client</b>
+## TCP Client
+#### Features
+- Read / Write bytes array / string to Server.
+- Check connection status with Server.
+- Data receive by event.
+
+#### Quick Start
 ```C#
 private TCPClient Client;
 private void Init()
 {
     Client.HostName = "127.0.0.1";
     Client.Port = 10000;
-    Client.DataReceived += Client_DataReceived;
+    //Notify when connection to server break.
+    Client.ConnectionStatusChanged += Client_ConnectionStatusChanged;
+    Client.DataReceived += Client_DataReceived; //Subscribe to data received event.
+    Clinet.Connect();   //Connect to Server.
 }
 
 private void Client_DataReceived(object sender, EventArgs e)
 {
-    //Read message from TCP Server.
-    String inputMsg = Client.ReadString();
-    //...
-    //Process incoming message ...
+    String inputMsg = e.GetString(); //Read input from TCP Server as String
+    byte [] inputData = e.Data;      //Read input from TCP Server as byte array
+
+    //Process incoming data or message ...
 }
 
 private void WriteDataToServer()
 {
-    Client.Write("Message to Server.");
+    //Example
+    Client.Write("String message to Server.");  
+    Client.WriteLine("Message terminated with LF.");
+    Client.Write(new byte[]{'D','a','t','a'}); //Write to Server in byte array
     ...
 }
-
 ```
+To read message from TCP Server without using DataReceived event, skip DataReceived event subscription and use one of the following method to read input from TCP Server.
+```C#
+    byte[] inputData = ReadBytes();  //Read input as byte array.
+    string inputString = ReadString(); //Read input as string.
+```
+
+#### Disposing and Clean up
+Both connection status and incoming data monitoring handle by thread.
+We recommend to always call the `Dispose()` method to properly terminate thread for unused object.
+
+## Reference
 Documentation and explanation regarding TcpAppServer and TcpAppClient is available at<br>
 [TCP Application Protocol – TCP/IP based Inter-process Communication](https://www.codeproject.com/Articles/5205700/TCP-Application-Protocol-TCP-IP-based-Inter-proces)
 
-Code Artist 2017 - 2021  
+Code Artist 2017 - 2022  
 www.codearteng.com

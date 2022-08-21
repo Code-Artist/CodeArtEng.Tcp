@@ -39,15 +39,19 @@
             this.TxtHostName = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.BtTestTimeout = new System.Windows.Forms.Button();
             this.BtAutoSum = new System.Windows.Forms.Button();
             this.BtSetup = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.TxtTimeout = new System.Windows.Forms.TextBox();
             this.CbClientType = new System.Windows.Forms.ComboBox();
             this.ClientProperty = new System.Windows.Forms.PropertyGrid();
-            this.BtTestTimeout = new System.Windows.Forms.Button();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.PnTcpAppClient = new System.Windows.Forms.GroupBox();
             this.PnSendCommand.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.PnTcpAppClient.SuspendLayout();
             this.SuspendLayout();
             // 
             // PnSendCommand
@@ -56,7 +60,7 @@
             this.PnSendCommand.Controls.Add(this.CommandBox);
             this.PnSendCommand.Controls.Add(this.BtSend);
             this.PnSendCommand.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.PnSendCommand.Location = new System.Drawing.Point(254, 463);
+            this.PnSendCommand.Location = new System.Drawing.Point(254, 713);
             this.PnSendCommand.Name = "PnSendCommand";
             this.PnSendCommand.Size = new System.Drawing.Size(675, 30);
             this.PnSendCommand.TabIndex = 0;
@@ -100,9 +104,10 @@
             this.TerminalOutput.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TerminalOutput.Font = new System.Drawing.Font("Courier New", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.TerminalOutput.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.TerminalOutput.Location = new System.Drawing.Point(254, 32);
+            this.TerminalOutput.Location = new System.Drawing.Point(254, 91);
             this.TerminalOutput.Name = "TerminalOutput";
-            this.TerminalOutput.Size = new System.Drawing.Size(675, 431);
+            this.TerminalOutput.ReadOnly = true;
+            this.TerminalOutput.Size = new System.Drawing.Size(675, 622);
             this.TerminalOutput.TabIndex = 1;
             this.TerminalOutput.Text = "Response Text";
             // 
@@ -152,9 +157,6 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.BtTestTimeout);
-            this.panel1.Controls.Add(this.BtAutoSum);
-            this.panel1.Controls.Add(this.BtSetup);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.TxtTimeout);
             this.panel1.Controls.Add(this.CbClientType);
@@ -169,9 +171,19 @@
             this.panel1.Size = new System.Drawing.Size(929, 32);
             this.panel1.TabIndex = 4;
             // 
+            // BtTestTimeout
+            // 
+            this.BtTestTimeout.Location = new System.Drawing.Point(168, 19);
+            this.BtTestTimeout.Name = "BtTestTimeout";
+            this.BtTestTimeout.Size = new System.Drawing.Size(51, 23);
+            this.BtTestTimeout.TabIndex = 10;
+            this.BtTestTimeout.Text = "Test";
+            this.BtTestTimeout.UseVisualStyleBackColor = true;
+            this.BtTestTimeout.Click += new System.EventHandler(this.BtTestTimeout_Click);
+            // 
             // BtAutoSum
             // 
-            this.BtAutoSum.Location = new System.Drawing.Point(622, 4);
+            this.BtAutoSum.Location = new System.Drawing.Point(87, 19);
             this.BtAutoSum.Name = "BtAutoSum";
             this.BtAutoSum.Size = new System.Drawing.Size(75, 23);
             this.BtAutoSum.TabIndex = 9;
@@ -181,7 +193,7 @@
             // 
             // BtSetup
             // 
-            this.BtSetup.Location = new System.Drawing.Point(544, 4);
+            this.BtSetup.Location = new System.Drawing.Point(6, 19);
             this.BtSetup.Name = "BtSetup";
             this.BtSetup.Size = new System.Drawing.Size(75, 23);
             this.BtSetup.TabIndex = 8;
@@ -226,25 +238,39 @@
             this.ClientProperty.Dock = System.Windows.Forms.DockStyle.Left;
             this.ClientProperty.Location = new System.Drawing.Point(0, 32);
             this.ClientProperty.Name = "ClientProperty";
-            this.ClientProperty.Size = new System.Drawing.Size(254, 461);
+            this.ClientProperty.Size = new System.Drawing.Size(254, 711);
             this.ClientProperty.TabIndex = 5;
             // 
-            // BtTestTimeout
+            // panel2
             // 
-            this.BtTestTimeout.Location = new System.Drawing.Point(703, 4);
-            this.BtTestTimeout.Name = "BtTestTimeout";
-            this.BtTestTimeout.Size = new System.Drawing.Size(51, 23);
-            this.BtTestTimeout.TabIndex = 10;
-            this.BtTestTimeout.Text = "Test";
-            this.BtTestTimeout.UseVisualStyleBackColor = true;
-            this.BtTestTimeout.Click += new System.EventHandler(this.BtTestTimeout_Click);
+            this.panel2.Controls.Add(this.PnTcpAppClient);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel2.Location = new System.Drawing.Point(254, 32);
+            this.panel2.Name = "panel2";
+            this.panel2.Padding = new System.Windows.Forms.Padding(5);
+            this.panel2.Size = new System.Drawing.Size(675, 59);
+            this.panel2.TabIndex = 6;
+            // 
+            // PnTcpAppClient
+            // 
+            this.PnTcpAppClient.Controls.Add(this.BtTestTimeout);
+            this.PnTcpAppClient.Controls.Add(this.BtSetup);
+            this.PnTcpAppClient.Controls.Add(this.BtAutoSum);
+            this.PnTcpAppClient.Dock = System.Windows.Forms.DockStyle.Top;
+            this.PnTcpAppClient.Location = new System.Drawing.Point(5, 5);
+            this.PnTcpAppClient.Name = "PnTcpAppClient";
+            this.PnTcpAppClient.Size = new System.Drawing.Size(665, 51);
+            this.PnTcpAppClient.TabIndex = 0;
+            this.PnTcpAppClient.TabStop = false;
+            this.PnTcpAppClient.Text = "TCP App Client";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(929, 493);
+            this.ClientSize = new System.Drawing.Size(929, 743);
             this.Controls.Add(this.TerminalOutput);
+            this.Controls.Add(this.panel2);
             this.Controls.Add(this.PnSendCommand);
             this.Controls.Add(this.ClientProperty);
             this.Controls.Add(this.panel1);
@@ -255,6 +281,8 @@
             this.PnSendCommand.PerformLayout();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.PnTcpAppClient.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -279,5 +307,7 @@
         private System.Windows.Forms.Button BtSetup;
         private System.Windows.Forms.Button BtAutoSum;
         private System.Windows.Forms.Button BtTestTimeout;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.GroupBox PnTcpAppClient;
     }
 }

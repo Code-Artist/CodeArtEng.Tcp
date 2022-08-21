@@ -50,7 +50,8 @@ namespace TcpServerExample
 
             CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin SamplePlugin = new CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin();
             AppServer.RegisterPluginType(typeof(CodeArtEng.Tcp.Tests.TcpAppServerSamplePlugin));
-            AppServer.RegisterPluginType(typeof(CodeArtEng.Tcp.Tests.TcpAppServerSimpleMath));
+            //AppServer.RegisterPluginType(typeof(CodeArtEng.Tcp.Tests.TcpAppServerSimpleMath));
+            AppServer.RegisterPlugins();
 
             propertyGrid2.SelectedObject = AppServer;
         }
@@ -84,34 +85,34 @@ namespace TcpServerExample
 
         private void LogInfo(RichTextBox target, string text)
         {
-            //target.SelectionColor = System.Drawing.Color.Black;
-            //target.AppendText(text + "\n");
-            //target.SelectionStart = target.TextLength;
-            //target.ScrollToCaret();
+            target.SelectionColor = System.Drawing.Color.Black;
+            target.AppendText(text + "\n");
+            target.SelectionStart = target.TextLength;
+            target.ScrollToCaret();
         }
 
         private void LogRX(RichTextBox target, string message)
         {
-            //target.SelectionColor = System.Drawing.Color.DarkGreen;
-            //target.AppendText(message + "\n");
-            //target.SelectionStart = target.TextLength;
-            //target.ScrollToCaret();
+            target.SelectionColor = System.Drawing.Color.DarkGreen;
+            target.AppendText(message + "\n");
+            target.SelectionStart = target.TextLength;
+            target.ScrollToCaret();
         }
 
         private void LogRX(RichTextBox target, byte[] data)
         {
-            //target.SelectionColor = System.Drawing.Color.DarkGreen;
-            //target.AppendText(Encoding.ASCII.GetString(data));
-            //target.SelectionStart = target.TextLength;
-            //target.ScrollToCaret();
+            target.SelectionColor = System.Drawing.Color.DarkGreen;
+            target.AppendText(Encoding.ASCII.GetString(data));
+            target.SelectionStart = target.TextLength;
+            target.ScrollToCaret();
         }
 
         private void LogTX(RichTextBox target, byte[] data)
         {
-            //target.SelectionColor = System.Drawing.Color.Blue;
-            //target.AppendText(Encoding.ASCII.GetString(data));
-            //target.SelectionStart = target.TextLength;
-            //target.ScrollToCaret();
+            target.SelectionColor = System.Drawing.Color.Blue;
+            target.AppendText(Encoding.ASCII.GetString(data));
+            target.SelectionStart = target.TextLength;
+            target.ScrollToCaret();
         }
 
         #region [ TCP Server ]
@@ -160,8 +161,8 @@ namespace TcpServerExample
                 return;
 
             }
-
-            //Display Received Bytes
+            
+            //Auto Reply
             if (!string.IsNullOrEmpty(txtReply.Text)) e.Client.WriteLineToClient(txtReply.Text);
         }
 
@@ -249,6 +250,17 @@ namespace TcpServerExample
 
         private void AppServer_ClientSigningOut(object sender, TcpAppServerEventArgs e)
         {
+            if(InvokeRequired)
+            {
+                BeginInvoke(new MethodInvoker(RefreshControls));
+                return;
+            }
+            RefreshControls();
+        }
+
+        private void RefreshControls()
+        {
+            tcpClientsList1.Refresh();
         }
 
         private void AppServer_ClientConnected(object sender, TcpServerEventArgs e)
