@@ -69,7 +69,7 @@ private void Client_MessageReceived(object sender, MessageReceivedEventArgs e)
 ```
 #### Disposing and Clean up
 Incoming connection monitoring handle by thread.
-We recommend to always call the `Dispose()` method to properly terminate thread for unused object.
+We recommend to always call the `Dispose()` method to properly terminate thread for unused object. Failing to do may resulting application keep running in background even forms are closed.
 
 ## TCP Client
 #### Features
@@ -115,11 +115,145 @@ To read message from TCP Server without using DataReceived event, skip DataRecei
 
 #### Disposing and Clean up
 Both connection status and incoming data monitoring handle by thread.
-We recommend to always call the `Dispose()` method to properly terminate thread for unused object.
+We recommend to always call the `Dispose()` method to properly terminate thread for unused object. Failing to do may resulting application keep running in background even forms are closed.
 
-## Reference
-Documentation and explanation regarding TcpAppServer and TcpAppClient is available at<br>
-[TCP Application Protocol – TCP/IP based Inter-process Communication](https://www.codeproject.com/Articles/5205700/TCP-Application-Protocol-TCP-IP-based-Inter-proces)
+## TCP Application Protocol
+TCP Application Protocol is a high level communication protocol created on top of TCP (Transmission Control Protocol)  served as common remote interface between applications which can be easily integrated to any application with minimum coding effort from developer on both server and client application.
+
+With TCP Application Protocol, application specific commands can be easily defined by server application. Each registered command keyword can include with  one or more optional or mandatory parameter as needed. Incoming message from client will be verify against registered command set and have defined parameters parse and assigned. Developer can focus on implementation of each of the command.
+
+### About TCP Application Protocol
+TCP Application Protocol is a text based protocol, where any TCP client including [RealTerm](https://realterm.sourceforge.io/) can be use to interact TCP Application Server. TCP Application message format is defined as follow:
+
+1. Command sent from client start with command keyword follow by parameters if any and terminated with carriage return (\r, 0x0D). Extra parameters in commands will be ignored.<br>
+`<Command Keyword> [Parameter0] ... [ParameterN]`
+
+2. Response from server to client is begin with status (`OK` or `ERR`) following by response message.<br/>
+`<Status> <Response Message / Return Value>`
+
+- TcpAppServer - TCP Application Server.
+- ITcpAppServerPlugin - TCP Application Server Plugin Interface.
+- TcpAppServerPlugin - TCP Application Server Plugin Helper Class for plugin implementation.
+- TcpAppCommand - TCP Application Registered Command.
+- TcpAppParameter - TCP Application Command Parameter.
+- TcpAppInputCommand - TCP Application Server Received Command.
+
+### TCP Application Server
+#### Quick start
+```C#
+private TcpAppServer AppServer;
+
+private void SetupServer()
+{
+    // <------
+    AppServer = new TcpAppServer();  //Create instance using Generic TCP Application Server Class
+    // OR
+    AppServer = new TcpAppServerWindows(this); //Create instance using TCP Application Server for WinForms
+    // ------>
+
+    //Setup Server
+    AppServer.WelcomeMessage = "Welcome to TCP Application Server";
+    AppServer.MaxClients = 5; //Define number of clients allowed to connects
+    AppServer.ExecutionTimeout = 1000;
+    AppServer.ClientConnected += AppServer_ClientConnected; //
+    AppServer.ClientDisconnected += AppServer_ClientDisconnected;
+    AppServer.ClientSignedIn += AppServer_ClientSignedIn;
+    AppServer.ClientSigningOut += AppServer_ClientSigningOut;
+
+    RegisterAppServerCommands();
+    RegisterPlugins();
+    AppServer.Start(12000);   //Start Server
+}
+
+private void AppServer_ClientConnected(object sender, TcpServerEventArgs e)
+{
+    //Get information of connected client. We can decide if want to accept this incoming connection.
+    string ipAddress = e.Client.ClientIPAddress;
+    string port = e.Client.Port;
+
+    //To reject client Connection
+    e.Client.Close(); return;
+
+    //(Optional) subscribe to client object event to monitor incoming messages
+    e.Client.MessageReceived += Client_MessageReceived;
+    e.Client.BytesSent += Client_MessageSent;
+}
+
+private void RegisterPlugins()
+{
+    //Two options available. Either register plugin using type
+    AppServer.RegisterPluginType(typeof(TcpAppServerSamplePlugin));
+
+    // OR discover and register all plugin class which implemented ITcpAppServerPlugin
+    AppServer.Registerplugins();
+}
+
+private void RegisterAppServerCommand()
+{
+    //Register application specific commands to TCP Application Server.
+    //Command can have 0 or more mandatory and/or optional parameters.
+    AppServer.RegisterCommand("CustomFunction", "Dummy Custom Function", custonFunctionCallback,
+        TcpAppParameter.CreateParameter("P1", "Parameter P1"),          //Add mandatory parameter
+        TcpAppParameter.CreateOptionalParameter("P2", "Parameter P2")); //Add optional parameter
+}
+
+private void customFunctionCallback(TcpAppInputCommand sender)
+{
+    //Client information is accessible using sender.AppClient object
+    string clientIP = sender.AppClient.Connection.ClientIPAddress;
+
+    //Implement function actions...
+
+    sender.Status = TcpAppcommandStatus.OK;  //Default status is ERR. Update when execution success.
+    sender.OutputMessage = "Execution Completed.";
+}
+```
+
+#### Disposing and Clean up
+Similar to `TcpServer`, it is recommended to call `Dispose()` method to properly terminate all threads for unused object.
+Failing to do may resulting application keep running in background even forms are closed.
+
+### Working with Plugin
+TCP Application Server Plugin provide great capability to application where new feature and components can be added at later stage. TCP Application Protocol equipped with capability to handle and extend command set in plugin components as well as instantiate objects in server application, let’s see how.
+
+#### TCP Application Server Plugin Implementation
+- Implement `ITcpAppServerPlugin` interface on plugin class.
+- Create plugin implementation class with `TcpAppServerPlugi`n as base class or private object in plugin class. The `TcpAppServerPlugin` class will interact with `TcpAppServer` for command registration and execution.
+- Register commands from plugin components to host application using `TcpAppServerPlugin` object.
+- Make sure `ExecutePluginCommand` and `ShowHelp` methods are calling the corresponding method in `TcpAppServerPlugin` object.
+
+```C#
+//Example plugin implemetation
+public class TcpAppServerSamplePlugin : ITcpAppServerPlugin
+{
+    //Plugin class must implement ITcpAppServerPlugin interface
+    //TcpAppPlugin in helper class contains common implementation for plugin object.
+    private readonly TcpAppServerPlugin TcpAppPlugin;
+
+    public string PluginName { get; } = "Sample Plugin";
+    public string PluginDescription { get; } = "Long description about this plugin...";
+    public string Alias { get; set; } //Plugin instance name, set by TcpAppServer
+
+    public TcpAppServerSamplePlugin()
+    {
+        TcpAppPlugin = new TcpAppServerPlugin();
+
+        //Register commands.
+        TcpAppPlugin.RegisterCommand("PluginCommand1", "Plugin Command 1", delegate (TcpAppInputCommand sender)
+            {
+                sender.Status = TcpAppCommandStatus.OK;
+                sender.OutputMessage = "Command 1 Executed!";
+            });
+
+    }
+
+    public bool DisposeRequest() { return true; }
+
+    //Make sure the following methods ShowHelp and ExecutePluginCommand execute from TcpAppServerPlugin
+    public void ShowHelp(TcpAppInputCommand sender){ TcpAppPlugin.ShowHelp(sender); }
+    public void ExecutePluginCommand(TcpAppInputCommand sender){ TcpAppPlugin.ExecutePluginCommand(sender); }
+}
+```
 
 Code Artist 2017 - 2022  
 www.codearteng.com
