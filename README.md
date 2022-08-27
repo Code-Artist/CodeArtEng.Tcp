@@ -10,15 +10,15 @@
 - TcpAppServerWindows: Derived from TcpAppServer. TCP Application Server for WinForms.
 - [TCP Application Client](#TCP-Application-Client): TCP Application Client for application automation.
 
-#### About TCP Application Protocol
+### About TCP Application Protocol
 TCP Application Protocol is created as high level communication protocol to provide a common remote interface between applications which can be easily integrated to any application with minimum coding effort from developer on both server and client application.
 
 ## TCP Server
-#### Features
+### Features
 - Multi-threaded TCP server with multi client support.
 - Message Receive Mode: Delimiter / Timeout.
 
-#### Quick Start
+### Quick Start
 ```C#
 private TCPServer Server;
 private void Init()
@@ -67,17 +67,17 @@ private void Client_MessageReceived(object sender, MessageReceivedEventArgs e)
     ...
 }
 ```
-#### Disposing and Clean up
+### Disposing and Clean up
 Incoming connection monitoring handle by thread.
 We recommend to always call the `Dispose()` method to properly terminate thread for unused object. Failing to do may resulting application keep running in background even forms are closed.
 
 ## TCP Client
-#### Features
+### Features
 - Read / Write bytes array / string to Server.
 - Check connection status with Server.
 - Data receive by event.
 
-#### Quick Start
+### Quick Start
 ```C#
 private TCPClient Client;
 private void Init()
@@ -113,11 +113,12 @@ To read message from TCP Server without using DataReceived event, skip DataRecei
     string inputString = ReadString(); //Read input as string.
 ```
 
-#### Disposing and Clean up
+### Disposing and Clean up
 Both connection status and incoming data monitoring handle by thread.
 We recommend to always call the `Dispose()` method to properly terminate thread for unused object. Failing to do may resulting application keep running in background even forms are closed.
 
 ## TCP Application Protocol
+### Introduction
 TCP Application Protocol is a high level communication protocol created on top of TCP (Transmission Control Protocol)  served as common remote interface between applications which can be easily integrated to any application with minimum coding effort from developer on both server and client application.
 
 With TCP Application Protocol, application specific commands can be easily defined by server application. Each registered command keyword can include with  one or more optional or mandatory parameter as needed. Incoming message from client will be verify against registered command set and have defined parameters parse and assigned. Developer can focus on implementation of each of the command.
@@ -138,8 +139,8 @@ TCP Application Protocol is a text based protocol, where any TCP client includin
 - TcpAppParameter - TCP Application Command Parameter.
 - TcpAppInputCommand - TCP Application Server Received Command.
 
-### TCP Application Server
-#### Quick start
+## TCP Application Server
+### Quick start
 ```C#
 private TcpAppServer AppServer;
 
@@ -209,19 +210,14 @@ private void customFunctionCallback(TcpAppInputCommand sender)
 }
 ```
 
-#### Disposing and Clean up
+### Disposing and Clean up
 Similar to `TcpServer`, it is recommended to call `Dispose()` method to properly terminate all threads for unused object.
 Failing to do may resulting application keep running in background even forms are closed.
 
-### Working with Plugin
+## Working with Plugin
 TCP Application Server Plugin provide great capability to application where new feature and components can be added at later stage. TCP Application Protocol equipped with capability to handle and extend command set in plugin components as well as instantiate objects in server application, let’s see how.
 
-#### TCP Application Server Plugin Implementation
-- Implement `ITcpAppServerPlugin` interface on plugin class.
-- Create plugin implementation class with `TcpAppServerPlugi`n as base class or private object in plugin class. The `TcpAppServerPlugin` class will interact with `TcpAppServer` for command registration and execution.
-- Register commands from plugin components to host application using `TcpAppServerPlugin` object.
-- Make sure `ExecutePluginCommand` and `ShowHelp` methods are calling the corresponding method in `TcpAppServerPlugin` object.
-
+### TCP Application Server Plugin Implementation
 ```C#
 //Example plugin implemetation
 public class TcpAppServerSamplePlugin : ITcpAppServerPlugin
