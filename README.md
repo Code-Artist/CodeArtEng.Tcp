@@ -294,6 +294,7 @@ private void ExecuteCommand()
 This application implemented generic terminal where user can enter the commands manually to interact with server application.
 
 ToDo: TcpAppClientTerminal Screenshot.
+[TcpAppClientTerminal](https://github.com/Code-Artist/CodeArtEng.Tcp/blob/master/Doc/TCPAppTerminal.png)
 
 Code Artist 2017 - 2022  
 www.codearteng.com
