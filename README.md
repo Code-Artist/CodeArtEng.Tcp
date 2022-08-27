@@ -7,6 +7,7 @@
 - [TcpServer](#TCP-Server): TCP Server with multiple clients handling capability
 - [TcpClient](#TCP-Client): TCP Client with connection and incoming data monitoring.
 - [TcpAppServer](#TCP-Application-Server): TCP Application Server for application automation.
+- [TcpAppServerPlugin](#TCP Application Server Plugin): Multi Instance Plugin for TCP Application Server.
 - TcpAppServerWindows: Derived from TcpAppServer. TCP Application Server for WinForms.
 - [TCP Application Client](#TCP-Application-Client): TCP Application Client for application automation.
 
@@ -119,7 +120,7 @@ We recommend to always call the `Dispose()` method to properly terminate thread 
 
 ## TCP Application Protocol
 ### Introduction
-TCP Application Protocol is a high level communication protocol created on top of TCP (Transmission Control Protocol)  served as common remote interface between applications which can be easily integrated to any application with minimum coding effort from developer on both server and client application.
+TCP Application Protocol is a high level communication protocol created on top of TCP (Transmission Control Protocol)  served as common remote interface between applications which can be easily integrated to any application with minimum coding effort from developer on both server and client application. With TCP application, serial port instrument can be accessible by multiple applications.
 
 With TCP Application Protocol, application specific commands can be easily defined by server application. Each registered command keyword can include with  one or more optional or mandatory parameter as needed. Incoming message from client will be verify against registered command set and have defined parameters parse and assigned. Developer can focus on implementation of each of the command.
 
@@ -132,12 +133,15 @@ TCP Application Protocol is a text based protocol, where any TCP client includin
 2. Response from server to client is begin with status (`OK` or `ERR`) following by response message.<br/>
 `<Status> <Response Message / Return Value>`
 
-- TcpAppServer - TCP Application Server.
+ToDo: Class Diagram
+
+- TcpAppServer - TCP Application Server. Host for remote control.
 - ITcpAppServerPlugin - TCP Application Server Plugin Interface.
 - TcpAppServerPlugin - TCP Application Server Plugin Helper Class for plugin implementation.
 - TcpAppCommand - TCP Application Registered Command.
 - TcpAppParameter - TCP Application Command Parameter.
 - TcpAppInputCommand - TCP Application Server Received Command.
+- TcpAppClient - TCP Application Client. Remove control client.
 
 ## TCP Application Server
 ### Quick start
@@ -217,7 +221,7 @@ Failing to do may resulting application keep running in background even forms ar
 ## Working with Plugin
 TCP Application Server Plugin provide great capability to application where new feature and components can be added at later stage. TCP Application Protocol equipped with capability to handle and extend command set in plugin components as well as instantiate objects in server application, let’s see how.
 
-### TCP Application Server Plugin Implementation
+### TCP Application Server Plugin
 ```C#
 //Example plugin implemetation
 public class TcpAppServerSamplePlugin : ITcpAppServerPlugin
@@ -250,6 +254,46 @@ public class TcpAppServerSamplePlugin : ITcpAppServerPlugin
     public void ExecutePluginCommand(TcpAppInputCommand sender){ TcpAppPlugin.ExecutePluginCommand(sender); }
 }
 ```
+
+## TCP Application Client
+TCP Application Client helper class. Communication with TCP Application Server can be done with any TCP client as well.
+
+### Quick Start
+```C#
+private TcpAppClient AppClient;
+
+public void SetupClient()
+{
+    AppClient = new TcpAppClient();
+    AppClient.ConnectionStatusChanged += Client_ConnectionStatusChanged;
+    AppClient.ResponseReceived += Client_ResponseReceived;
+    AppClient.CommandSend += Client_CommandSend;
+}
+
+private void ConnectToServer()
+{
+    AppClient.HostName = <Server IP>;
+    AppClient.Port = <Server Port>;
+    AppClient.Connect(); //Connect to TCP Application Server to retrieve commands and plugin objects list.
+
+    //List of commands and plugin objects are accessible from the following properties.
+    List<string> commands = AppClient.Commands;
+    List<string> plugins = AppClient.PluginObjects;
+}
+
+private void ExecuteCommand()
+{
+    //Send command to Server
+    TcpAppCommandResult result = AppClient.ExecuteCommand(<Command>, 2000); //Execute command, timeout in 2 seconds.
+
+    //Process returned result...
+}
+```
+### TCP Application Client Terminal
+<b>TCPAppClientTerminal</b> is an example of TCP client implementation.<br>
+This application implemented generic terminal where user can enter the commands manually to interact with server application.
+
+ToDo: TcpAppClientTerminal Screenshot.
 
 Code Artist 2017 - 2022  
 www.codearteng.com
