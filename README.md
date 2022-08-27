@@ -133,7 +133,7 @@ TCP Application Protocol is a text based protocol, where any TCP client includin
 2. Response from server to client is begin with status (`OK` or `ERR`) following by response message.<br/>
 `<Status> <Response Message / Return Value>`
 
-ToDo: Class Diagram
+![TCP Application Class Diagram](<Doc/CodeArtEng.Tcp_UML.png>)
 
 - TcpAppServer - TCP Application Server. Host for remote control.
 - ITcpAppServerPlugin - TCP Application Server Plugin Interface.
@@ -294,7 +294,7 @@ private void ExecuteCommand()
 This application implemented generic terminal where user can enter the commands manually to interact with server application.
 
 ToDo: TcpAppClientTerminal Screenshot.
-[TcpAppClientTerminal](https://github.com/Code-Artist/CodeArtEng.Tcp/blob/master/Doc/TCPAppTerminal.png)
+![TcpAppClientTerminal](<Doc/TCPAppTerminal.png>)
 
 Code Artist 2017 - 2022  
 www.codearteng.com
