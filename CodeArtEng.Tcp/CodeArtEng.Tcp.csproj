@@ -12,7 +12,7 @@ Support .NET Framework 4.8, .NET 6.0</Description>
     <RepositoryUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>5.1.0</Version>
+    <Version>5.1.1</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</PackageProjectUrl>
     <AssemblyVersion></AssemblyVersion>
