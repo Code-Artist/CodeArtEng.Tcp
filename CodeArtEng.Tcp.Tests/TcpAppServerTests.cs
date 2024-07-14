@@ -101,7 +101,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppCommandResult result = ExecuteCommand("applicationNAME?");
             Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
-            Assert.IsTrue(result.ReturnMessage.StartsWith("Microsoft.TestHost"));
+            Assert.IsTrue(result.ReturnMessage.StartsWith("testhost"));
         }
 
         [Test]
