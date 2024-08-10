@@ -74,8 +74,11 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ClientConnect_InvalidPort()
         {
-            TcpClient client = new TcpClient("127.0.0.1", 90000);
-            Assert.Throws<ArgumentOutOfRangeException>(() => { client.Connect(); });
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                TcpClient client = new TcpClient("127.0.0.1", 90000);
+                client.Connect();
+            });
         }
 
         private bool ClientConnectFlag = false;

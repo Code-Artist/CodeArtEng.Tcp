@@ -52,7 +52,17 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// TCP Server connection port.
         /// </summary>
-        public int Port { get; set; }
+        public int Port
+        {
+            get => _Port; 
+            set
+            {
+                if (value < 0 || value > 65535) 
+                    throw new ArgumentOutOfRangeException("Port must be between 0 and 65535.");
+                _Port = value;
+            }
+        }
+        private int _Port;
 
         /// <summary>
         /// Gets or sets the amount of time in miliseconds to wait for a valid response from TCP Server before read function return.

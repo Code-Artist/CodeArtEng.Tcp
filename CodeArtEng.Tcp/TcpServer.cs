@@ -109,6 +109,12 @@ namespace CodeArtEng.Tcp
         /// </summary>
         public event EventHandler ServerStopped;
         /// <summary>
+        /// Occurs when incoming connection detected, before compare with max clients.
+        /// Subscribe this event to decide if any of the existing client should be dropped.
+        /// </summary>
+        /// <remarks>This event is triggered only if <see cref="MaxClients"/> is greater than 0.</remarks>
+        public event EventHandler<TcpServerConnectEventArgs> IncomingConnection;
+        /// <summary>
         /// Occurs when incoming connection is detected.
         /// </summary>
         public event EventHandler<TcpServerConnectEventArgs> ClientConnecting;
@@ -175,6 +181,8 @@ namespace CodeArtEng.Tcp
         public void Start(int port)
         {
             if (ConnectionMonitoring != null) return;
+            if (port < 0 || port > 65535)
+                throw new ArgumentOutOfRangeException("Port must be between 0 and 65535.");
             Port = port;
             Listener = new TcpListener(IPAddress.Any, Port);
             Listener.Start();
@@ -222,6 +230,11 @@ namespace CodeArtEng.Tcp
             }
         }
 
+        protected virtual void OnIncomingConnection(TcpServerConnectEventArgs e)
+        {
+            IncomingConnection?.Invoke(this, null);
+        }
+
         private void MonitorIncomingConnection()
         {
             while (true)
@@ -243,12 +256,14 @@ namespace CodeArtEng.Tcp
                     }
                     else
                     {
-
                         System.Net.Sockets.TcpClient client = Listener.AcceptTcpClient();
                         Trace.WriteLine(Name + ": New Connection Detected...");
 
                         if (MaxClients > 0)
                         {
+                            TcpServerConnectEventArgs arg = new TcpServerConnectEventArgs() { Client = client };
+                            OnIncomingConnection(arg);
+
                             //MAX Clients Restriction applied
                             if (Clients.Count >= MaxClients)
                             {
