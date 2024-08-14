@@ -7,7 +7,7 @@
 - [TcpServer](#TCP-Server): TCP Server with multiple clients handling capability
 - [TcpClient](#TCP-Client): TCP Client with connection and incoming data monitoring.
 - [TcpAppServer](#TCP-Application-Server): TCP Application Server for application automation.
-- [TcpAppServerPlugin](#TCP Application Server Plugin): Multi Instance Plugin for TCP Application Server.
+- [TcpAppServerPlugin](#TCP-Application-Server-Plugin): Multi Instance Plugin for TCP Application Server.
 - TcpAppServerWindows: Derived from TcpAppServer. TCP Application Server for WinForms.
 - [TCP Application Client](#TCP-Application-Client): TCP Application Client for application automation.
 
@@ -27,6 +27,11 @@ private void Init()
     Server = new TcpServer("MyTcpServer"); //Create TCP Server
     Server.ServerStarted += Server_StateChanged; //Subscribe to Server Events
     Server.ServerStopped += Server_StateChanged;
+    //Optional event: client connecting, before perform max client check
+    Server.IncomingConnection += Server_IncomingConnection;     
+    //Optional event: Review and decide if client can be accept.
+    Server.ClientConnecting = Server_ClientConnecting;     
+    //Require: Handle new connected client.
     Server.ClientConnected += Server_ClientConnected;
 
     //Configure how MessageReceived event should trigger
@@ -44,12 +49,24 @@ private void Init()
 private void Server_ClientConnected(object sender, TcpServerEventArgs e)
 {
     //Subscribe to TCPServerConnection bytes received event to capture incoming byte
+    // this event trigger as soon as any byte received ignore message receive end mode.
     e.Client.BytesReceived += Client_BytesReceived;
 
-    //OR
+    //**************** OR ****************
 
-    //Subscribe to TCPServerConnection message received event to capture message string
+    //Subscribe to either TCPServerConnection message received event or
+    //ProcessReceivedMessageCallback callback to process received message string / bytes
+    
+    //a) Message Received event
     e.Client.MessageReceived += Client_MessageReceived;   
+    
+    //b) ProcessReceivedMessageCallback callback
+    e.Client.ProcessReceivedMessageCallback = ProcessMessage;    
+}
+
+private void ProcessMessage(TcpServerConnection client, string message, byte[] messageBytes)
+{
+    //Process inocming message here.
 }
 
 private void Client_BytesReceived(object sender, BytesReceivedEventArgs e)

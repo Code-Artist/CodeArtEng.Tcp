@@ -8,8 +8,6 @@ using System.Threading;
 
 namespace CodeArtEng.Tcp
 {
-    //ToDo: TcpClient, receive message without delimiter? Use timeout to predict end of message.
-
     /// <summary>
     /// Data class for <see cref="TcpServer.ClientConnected"/> 
     /// and <see cref="TcpServer.ClientDisconnected"/> events.
@@ -216,7 +214,10 @@ namespace CodeArtEng.Tcp
             Trace.WriteLine(Name + ": Shut Down.");
         }
 
-        private void DisconnectAllClients()
+        /// <summary>
+        /// Safely disconnect all clients without shutting down TCP Server.
+        /// </summary>
+        public void DisconnectAllClients()
         {
             lock (ActiveConnections)
             {

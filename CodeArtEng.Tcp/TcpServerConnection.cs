@@ -174,6 +174,8 @@ namespace CodeArtEng.Tcp
                 TcpStream.Close();
                 TcpStream = null;
             }
+            AbortThread = true;
+            ReceiveTimer = null;
             Connected = false;
         }
 
@@ -182,9 +184,18 @@ namespace CodeArtEng.Tcp
             TcpStream.BeginRead(buffer, 0, BufferSize, EndRead, TcpStream);
         }
 
-        private Thread ReceiveTimer = null;
+        private Thread ReceiveTimer;
+        private bool AbortThread = false;
         private int ReceiveTimerTimeout, ReceiveTimerInterval;
         private DateTime LastRead;
+
+
+        private bool IsReceiveThreadActive()
+        {
+            if (ReceiveTimer == null) return false;
+            return ReceiveTimer.IsAlive;
+        }
+
         private void EndRead(IAsyncResult result)
         {
             try
@@ -232,14 +243,16 @@ namespace CodeArtEng.Tcp
 
                         case TcpServerMessageEndMode.Timeout:
                             {
-                                if(ReceiveTimer == null)
+                                if (!IsReceiveThreadActive())
                                 {
+                                    //Initiate thread to monitor message buffer until timeout.
+                                    //One thread at a time for each client.
                                     LastRead = DateTime.Now;
                                     ReceiveTimerTimeout = Parent.InterMessageTimeout;
                                     ReceiveTimerInterval = Math.Max(1, ReceiveTimerTimeout / 10);
                                     ReceiveTimer = new Thread(delegate ()
                                     {
-                                        while((DateTime.Now - LastRead).TotalMilliseconds < ReceiveTimerTimeout)
+                                        while (((DateTime.Now - LastRead).TotalMilliseconds < ReceiveTimerTimeout) && !AbortThread)
                                         {
                                             Thread.Sleep(ReceiveTimerInterval);
                                         }
