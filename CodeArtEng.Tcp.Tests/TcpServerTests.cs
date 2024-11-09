@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -59,7 +59,7 @@ namespace CodeArtEng.Tcp.Tests
         }
 
         [Test]
-        public void ServerPort() { Assert.AreEqual(12300, Server.Port); }
+        public void ServerPort() { Assert.That(Server.Port, Is.EqualTo(12300)); }
 
         [Test]
         public void ServerConnectFailed()
@@ -71,26 +71,26 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ServerClientIPAddress()
         {
-            Assert.AreEqual(1, Server.Clients.Count);
-            Assert.AreEqual("127.0.0.1", Server.Clients[0].ClientIPAddress.ToString());
+            Assert.That(Server.Clients.Count, Is.EqualTo(1));
+            Assert.That(Server.Clients[0].ClientIPAddress.ToString(), Is.EqualTo("127.0.0.1"));
         }
 
         [Test]
         public void ClientConnected()
         {
-            Assert.AreEqual(true, Client.Connected);
+            Assert.That(Client.Connected, Is.EqualTo(true));
         }
 
         [Test]
         public void ClientConnectDisconnect()
         {
-            Assert.AreEqual(1, Server.Clients.Count);
+            Assert.That(Server.Clients.Count, Is.EqualTo(1));
             TcpClient c = new TcpClient("127.0.0.1", 12300);
             c.Connect();
             TcpDelay();
             c.Disconnect();
             TcpDelay();
-            Assert.AreEqual(1, Server.Clients.Count);
+            Assert.That(Server.Clients.Count, Is.EqualTo(1));
         }
 
         [Test]
@@ -101,10 +101,8 @@ namespace CodeArtEng.Tcp.Tests
             {
                 Client.Write("Test");
                 TcpDelay();
-                Assert.AreEqual(4, Data.Length);
-                Assert.AreEqual(new byte[] {
-                    (byte)'T', (byte)'e', (byte)'s', (byte)'t' },
-                    Data);
+                Assert.That(Data.Length, Is.EqualTo(4));
+                Assert.That(new byte[] { (byte)'T', (byte)'e', (byte)'s', (byte)'t' }, Is.EqualTo(Data));
             }
             finally
             {
@@ -126,12 +124,12 @@ namespace CodeArtEng.Tcp.Tests
             MessageReceiveBuffer = string.Empty;
             Client.Write("Test Data");
             TcpDelay();
-            Assert.AreEqual(string.Empty, MessageReceiveBuffer);
+            Assert.That(MessageReceiveBuffer, Is.EqualTo(string.Empty));
             Debug.WriteLine("XXXX");
 
             Client.Write(" 001\nLine 2");
             TcpDelay();
-            Assert.AreEqual("Test Data 001", MessageReceiveBuffer);
+            Assert.That(MessageReceiveBuffer, Is.EqualTo("Test Data 001"));
         }
 
         private List<string> Messages;
@@ -146,7 +144,7 @@ namespace CodeArtEng.Tcp.Tests
             Server.Clients[0].FlushLineBuffer();
             Client.Write("DATA\n");
             TcpDelay();
-            Assert.AreEqual("DATA", MessageReceiveBuffer);
+            Assert.That(MessageReceiveBuffer, Is.EqualTo("DATA"));
         }
 
         [Test]
@@ -160,9 +158,9 @@ namespace CodeArtEng.Tcp.Tests
             {
                 Client.Write("Line 1\nLine 2\nLine 3\nDUMMY");
                 TcpDelay();
-                Assert.AreEqual(3, Messages.Count);
-                Assert.AreEqual("Line 1", Messages[0]);
-                Assert.AreEqual("Line 3", Messages[2]);
+                Assert.That(Messages.Count, Is.EqualTo(3));
+                Assert.That(Messages[0], Is.EqualTo("Line 1"));
+                Assert.That(Messages[2], Is.EqualTo("Line 3"));
             }
             finally
             {
@@ -191,7 +189,7 @@ namespace CodeArtEng.Tcp.Tests
                     TcpDelay();
                 }
                 TcpDelay();
-                Assert.AreEqual(10, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(10));
             }
             finally { server.Dispose(); }
         }

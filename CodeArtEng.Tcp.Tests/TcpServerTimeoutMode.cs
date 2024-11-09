@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,7 +42,7 @@ namespace CodeArtEng.Tcp.Tests
             DateTime tStart = DateTime.Now;
             ClientSendReceive();
             double totalSeconds = (DateTime.Now - tStart).TotalSeconds;
-            Assert.That((totalSeconds >= 1) && (totalSeconds <= 3));
+                        Assert.That((totalSeconds >= 1) && (totalSeconds <= 3));
         }
 
         private void ClientSendReceive()
@@ -73,7 +73,7 @@ namespace CodeArtEng.Tcp.Tests
                 ClientSendReceive();
             }
             double durations = (DateTime.Now - tStart).TotalSeconds;
-            Assert.That(durations > 3 && durations < 5);
+                        Assert.That(durations > 3 && durations < 5);
         }
 
         [Test]
@@ -100,8 +100,8 @@ namespace CodeArtEng.Tcp.Tests
                 }
             }
             double durations = (DateTime.Now - tStart).TotalSeconds;
-            Assert.That(durations > 3 && durations < 7);
-            Assert.AreEqual("123456", RxMessage);
+                        Assert.That(durations > 3 && durations < 7);
+            Assert.That(RxMessage,Is.EqualTo("123456"));
         }
     }
 }

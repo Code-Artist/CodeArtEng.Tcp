@@ -13,7 +13,7 @@ namespace CodeArtEng.Tcp
     public class TcpAppServerWindows : TcpAppServer
     {
         /// <summary>
-        /// Create TCP ApplicatioN Server for WinForms application and register WinForms specific commands.
+        /// Create TCP Application Server for WinForms application and register WinForms specific commands.
         /// </summary>
         public TcpAppServerWindows() : base()
         {

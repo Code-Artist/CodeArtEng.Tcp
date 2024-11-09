@@ -58,6 +58,7 @@
             this.BtStop = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.tcpServerLog = new System.Windows.Forms.RichTextBox();
+            this.ChkAutoSignIn = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -66,6 +67,7 @@
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.panel2.SuspendLayout();
+            this.panel4.SuspendLayout();
             this.QueuePanel.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -80,7 +82,7 @@
             this.propertyGrid1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.propertyGrid1.Location = new System.Drawing.Point(3, 34);
             this.propertyGrid1.Name = "propertyGrid1";
-            this.propertyGrid1.Size = new System.Drawing.Size(186, 467);
+            this.propertyGrid1.Size = new System.Drawing.Size(207, 467);
             this.propertyGrid1.TabIndex = 0;
             // 
             // panel1
@@ -94,7 +96,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(669, 93);
+            this.panel1.Size = new System.Drawing.Size(744, 93);
             this.panel1.TabIndex = 1;
             // 
             // label5
@@ -140,7 +142,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtReply.Location = new System.Drawing.Point(71, 6);
             this.txtReply.Name = "txtReply";
-            this.txtReply.Size = new System.Drawing.Size(585, 20);
+            this.txtReply.Size = new System.Drawing.Size(660, 20);
             this.txtReply.TabIndex = 3;
             this.txtReply.Text = "ACK";
             // 
@@ -284,6 +286,7 @@
             // 
             // panel4
             // 
+            this.panel4.Controls.Add(this.ChkAutoSignIn);
             this.panel4.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel4.Location = new System.Drawing.Point(0, 0);
             this.panel4.Name = "panel4";
@@ -323,7 +326,7 @@
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(871, 510);
+            this.tabPage1.Size = new System.Drawing.Size(967, 510);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "TCP Server";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -344,8 +347,8 @@
             // 
             this.splitContainer1.Panel2.Controls.Add(this.tcpServerLog);
             this.splitContainer1.Panel2.Controls.Add(this.panel1);
-            this.splitContainer1.Size = new System.Drawing.Size(865, 504);
-            this.splitContainer1.SplitterDistance = 192;
+            this.splitContainer1.Size = new System.Drawing.Size(961, 504);
+            this.splitContainer1.SplitterDistance = 213;
             this.splitContainer1.TabIndex = 4;
             // 
             // panel3
@@ -357,7 +360,7 @@
             this.panel3.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel3.Location = new System.Drawing.Point(3, 3);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(186, 31);
+            this.panel3.Size = new System.Drawing.Size(207, 31);
             this.panel3.TabIndex = 0;
             // 
             // BtStop
@@ -386,9 +389,19 @@
             this.tcpServerLog.Location = new System.Drawing.Point(0, 93);
             this.tcpServerLog.Name = "tcpServerLog";
             this.tcpServerLog.ReadOnly = true;
-            this.tcpServerLog.Size = new System.Drawing.Size(669, 411);
+            this.tcpServerLog.Size = new System.Drawing.Size(744, 411);
             this.tcpServerLog.TabIndex = 2;
             this.tcpServerLog.Text = "";
+            // 
+            // ChkAutoSignIn
+            // 
+            this.ChkAutoSignIn.AutoSize = true;
+            this.ChkAutoSignIn.Location = new System.Drawing.Point(3, 4);
+            this.ChkAutoSignIn.Name = "ChkAutoSignIn";
+            this.ChkAutoSignIn.Size = new System.Drawing.Size(81, 17);
+            this.ChkAutoSignIn.TabIndex = 0;
+            this.ChkAutoSignIn.Text = "Auto SignIn";
+            this.ChkAutoSignIn.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -410,6 +423,8 @@
             this.splitContainer2.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
+            this.panel4.ResumeLayout(false);
+            this.panel4.PerformLayout();
             this.QueuePanel.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -454,6 +469,7 @@
         private CodeArtEng.Tcp.TcpClientsList tcpClientsList1;
         private System.Windows.Forms.Panel QueuePanel;
         private CodeArtEng.Tcp.TcpAppServerQueue tcpAppServerQueue1;
+        private System.Windows.Forms.CheckBox ChkAutoSignIn;
     }
 }
 

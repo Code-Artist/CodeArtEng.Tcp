@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,7 +83,7 @@ namespace CodeArtEng.Tcp.Tests
 
         private void CheckResult(TcpAppCommandResult result)
         {
-            Assert.AreEqual(TcpAppCommandStatus.OK, result.Status);
+            Assert.That(result.Status, Is.EqualTo(TcpAppCommandStatus.OK));
         }
 
         [Test]
@@ -92,15 +92,15 @@ namespace CodeArtEng.Tcp.Tests
             SignedIn = SignedOut = false;
             Client.Disconnect(); //This function should not throw exception
             Client.Connect();
-            Assert.AreEqual(true, SignedIn);
+            Assert.That(SignedIn, Is.EqualTo(true));
             Thread.Sleep(10);
             Client.Disconnect();
-            Assert.AreEqual(true, SignedOut);
+            Assert.That(SignedOut, Is.EqualTo(true));
         }
 
         private void Server_ClientSigningIn(object sender, TcpAppServerExEventArgs e)
         {
-            Assert.IsFalse(string.IsNullOrEmpty(e.Value.ToString()));
+            Assert.That(string.IsNullOrEmpty(e.Value.ToString()), Is.False);
             e.Cancel = true;
         }
 
@@ -111,9 +111,9 @@ namespace CodeArtEng.Tcp.Tests
             try
             {
                 Assert.Throws<TcpAppClientException>(() =>
-                {
-                    Client.Connect();
-                });
+{
+    Client.Connect();
+});
 
             }
             finally
@@ -132,7 +132,7 @@ namespace CodeArtEng.Tcp.Tests
             Client2.Connect();
             TestContext.Progress.WriteLine("Client ConnectionID = " + Client.ConnectionID);
             TestContext.Progress.WriteLine("Client2 ConnectionID = " + Client2.ConnectionID);
-            Assert.AreNotEqual(Client.ConnectionID, Client2.ConnectionID);
+            Assert.That(Client2.ConnectionID, !Is.EqualTo(Client.ConnectionID));
         }
 
         [Test]
@@ -161,7 +161,7 @@ namespace CodeArtEng.Tcp.Tests
                 TClient3.Start();
                 for (int x = 0; x < 15; x++)
                 {
-                    Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 100").Status == TcpAppCommandStatus.OK);
+                    Assert.That(Client.ExecuteCommand("DelayNoQueue C1 100").Status == TcpAppCommandStatus.OK, Is.True);
                 }
             }
             finally
@@ -214,7 +214,7 @@ namespace CodeArtEng.Tcp.Tests
             try
             {
                 Client.Connect();
-                Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 5000", 10000).Status == TcpAppCommandStatus.ERR);
+                Assert.That(Client.ExecuteCommand("DelayNoQueue C1 5000", 10000).Status == TcpAppCommandStatus.ERR, Is.True);
             }
             finally
             {
@@ -230,7 +230,7 @@ namespace CodeArtEng.Tcp.Tests
             try
             {
                 Client.Connect();
-                Assert.IsTrue(Client.ExecuteCommand("DelayNoQueue C1 5000", 10000).Status == TcpAppCommandStatus.ERR);
+                Assert.That(Client.ExecuteCommand("DelayNoQueue C1 5000", 10000).Status == TcpAppCommandStatus.ERR, Is.True);
             }
             finally
             {

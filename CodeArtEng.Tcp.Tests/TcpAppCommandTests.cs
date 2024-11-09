@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +15,7 @@ namespace CodeArtEng.Tcp.Tests
         {
             TcpAppCommand cmd = new TcpAppCommand("CMD", "Dummy Command", null);
             cmd.AddParameter(TcpAppParameter.CreateParameter("P1", "Parameter 1"));
-            Assert.Throws<ArgumentException>(() => { cmd.AddParameter(TcpAppParameter.CreateParameter("P1", "Parameter 1")); });
+                        Assert.Throws<ArgumentException>(() => { cmd.AddParameter(TcpAppParameter.CreateParameter("P1", "Parameter 1")); });
         }
 
         [Test]
@@ -27,10 +27,10 @@ namespace CodeArtEng.Tcp.Tests
             cmd.AddParameter(TcpAppParameter.CreateParameterArray("Array1", "Array 1", false));
 
             TcpAppCommand cloned = cmd.Clone() as TcpAppCommand;
-            Assert.AreEqual("CMD", cloned.Keyword);
-            Assert.AreEqual("Dummy Command", cloned.Description);
-            Assert.AreEqual(3, cloned.Parameters.Count());
-            Assert.AreEqual("Array 1", cloned.Parameters[2].Description);
+            Assert.That(cloned.Keyword,Is.EqualTo("CMD"));
+            Assert.That(cloned.Description,Is.EqualTo("Dummy Command"));
+            Assert.That(cloned.Parameters.Count(),Is.EqualTo(3));
+            Assert.That(cloned.Parameters[2].Description,Is.EqualTo("Array 1"));
         }
     }
 }

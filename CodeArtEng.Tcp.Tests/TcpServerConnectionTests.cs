@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,12 +34,12 @@ namespace CodeArtEng.Tcp.Tests
             {
                 SubscribeEvent(server);
                 server.Start(200);
-                Assert.AreEqual(true, ServerStartedEvent);
-                Assert.AreEqual(true, server.IsServerStarted);
-                Assert.AreEqual(false, ServerStoppedEvent);
+                Assert.That(ServerStartedEvent, Is.EqualTo(true));
+                Assert.That(server.IsServerStarted, Is.EqualTo(true));
+                Assert.That(ServerStoppedEvent, Is.EqualTo(false));
                 server.Stop();
-                Assert.AreEqual(true, ServerStoppedEvent);
-                Assert.AreEqual(false, server.IsServerStarted);
+                Assert.That(ServerStoppedEvent, Is.EqualTo(true));
+                Assert.That(server.IsServerStarted, Is.EqualTo(false));
             }
         }
 
@@ -73,12 +73,12 @@ namespace CodeArtEng.Tcp.Tests
 
                 TcpClient client = new TcpClient("127.0.0.1", Port);
                 client.Connect();
-                Assert.AreEqual(true, client.Connected);
+                Assert.That(client.Connected, Is.EqualTo(true));
                 Trace.WriteLine("Client Connected to Server.");
                 TcpDelay();
-                Assert.AreEqual(true, ClientConnectingEvent);
-                Assert.AreEqual(true, ClientConnectedEvent);
-                Assert.AreEqual(1, server.Clients.Count);
+                Assert.That(ClientConnectingEvent, Is.EqualTo(true));
+                Assert.That(ClientConnectedEvent, Is.EqualTo(true));
+                Assert.That(server.Clients.Count, Is.EqualTo(1));
                 Trace.WriteLine("Test End");
             }
         }
@@ -94,9 +94,9 @@ namespace CodeArtEng.Tcp.Tests
                 client.Connect();
 
                 TcpDelay();
-                Assert.AreEqual(1, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(1));
                 server.Stop();
-                Assert.AreEqual(0, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(0));
             }
         }
 
@@ -113,32 +113,32 @@ namespace CodeArtEng.Tcp.Tests
                 client.Connect();
 
                 TcpDelay();
-                Assert.AreEqual(1, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(1));
                 client.Disconnect();
                 TcpDelay();
-                Assert.AreEqual(0, server.Clients.Count);
-                Assert.AreEqual(true, ClientDisconnectedEvent);
+                Assert.That(server.Clients.Count, Is.EqualTo(0));
+                Assert.That(ClientDisconnectedEvent, Is.EqualTo(true));
             }
         }
 
         [Test]
         public void ClientReconnect()
         {
-            using(TcpServer server = new TcpServer())
+            using (TcpServer server = new TcpServer())
             {
                 int Port = 10010;
                 server.Start(Port);
                 TcpClient client = new TcpClient("127.0.0.1", Port);
                 client.Connect();
-                Assert.IsTrue(client.Connected);
+                Assert.That(client.Connected, Is.True);
 
                 //Simulate Connection Broken.
                 server.Stop();
-                Assert.IsFalse(client.Connected, "Server stopped, expected client disconnected");
+                Assert.That(client.Connected, Is.False, "Server stopped, expected client disconnected");
                 server.Start(Port);
 
                 client.WriteLine("Test");
-                Assert.IsTrue(client.Connected);
+                Assert.That(client.Connected, Is.True);
 
             }
         }
@@ -164,12 +164,12 @@ namespace CodeArtEng.Tcp.Tests
 
                 TcpDelay();
                 TcpDelay();
-                Assert.AreEqual(ClientCount, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(ClientCount));
 
                 server.Clients[5].Close();
                 TcpDelay();
                 Trace.WriteLine("Connection Closed.");
-                Assert.AreEqual(ClientCount - 1, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(ClientCount - 1));
 
                 Trace.WriteLine("Test Ended.");
                 Clients.Clear();
@@ -196,7 +196,7 @@ namespace CodeArtEng.Tcp.Tests
                 Thread.Sleep(1000);
 
                 TcpDelay();
-                Assert.AreEqual(ClientCount, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(ClientCount));
                 Trace.WriteLine("Test Ended.");
                 Clients.Clear();
             }
@@ -221,7 +221,7 @@ namespace CodeArtEng.Tcp.Tests
                 }
                 Thread.Sleep(1000);
                 TcpDelay();
-                Assert.AreEqual(ClientCount, server.Clients.Count);
+                Assert.That(server.Clients.Count, Is.EqualTo(ClientCount));
 
                 TcpClient extraClient = new TcpClient("127.0.0.1", 10020);
                 Assert.Throws<TcpClientException>(() => { extraClient.Connect(); });

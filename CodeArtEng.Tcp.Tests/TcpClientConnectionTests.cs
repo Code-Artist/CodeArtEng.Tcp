@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -16,15 +16,15 @@ namespace CodeArtEng.Tcp.Tests
             TcpClient client = new TcpClient("127.0.0.1", 1000);
 
             //.NET 5.0 and .NET 6.0 throw SocketExceptionFactory+ExtendedSocketException, derrived from SocketException
-            //Assert.Throws<SocketException>(() => { client.Connect(); });
+                        //Assert.Throws<SocketException>(() => { client.Connect(); });
             try { client.Connect(); }
             catch (SocketException)
             {
-                Assert.Pass();
+                                Assert.Pass();
                 return;
             }
 
-            Assert.Fail();
+                        Assert.Fail();
         }
 
         [Test]
@@ -38,18 +38,18 @@ namespace CodeArtEng.Tcp.Tests
                 Trace.WriteLine("Client Conneect...");
                 client.Connect();
                 Thread.Sleep(200);
-                Assert.AreEqual(true, client.Connected);
-                Assert.AreEqual(1, server.Clients.Count);
+                Assert.That(client.Connected,Is.EqualTo(true));
+                Assert.That(server.Clients.Count,Is.EqualTo(1));
                 Trace.WriteLine("Client Disconnect...");
                 client.Disconnect();
                 Thread.Sleep(200);
-                Assert.AreEqual(0, server.Clients.Count);
+                Assert.That(server.Clients.Count,Is.EqualTo(0));
                 client.Disconnect();
                 Thread.Sleep(200);
                 Trace.WriteLine("Client Reconnect...");
                 client.Connect();
                 Thread.Sleep(200);
-                Assert.AreEqual(1, server.Clients.Count);
+                Assert.That(server.Clients.Count,Is.EqualTo(1));
                 client.Dispose();
             }
         }
@@ -63,18 +63,18 @@ namespace CodeArtEng.Tcp.Tests
                 TcpClient client = new TcpClient("localhost", 12100);
                 client.Connect();
                 Thread.Sleep(200);
-                Assert.AreEqual(true, client.Connected);
+                Assert.That(client.Connected,Is.EqualTo(true));
                 server.Stop();
                 Thread.Sleep(200);
-                Assert.AreEqual(0, server.Clients.Count);
-                Assert.AreEqual(false, client.Connected); //Property does not reflect the connection status.
+                Assert.That(server.Clients.Count,Is.EqualTo(0));
+                Assert.That(client.Connected,Is.EqualTo(false)); //Property does not reflect the connection status.
             }
         }
 
         [Test]
         public void ClientConnect_InvalidPort()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                        Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 TcpClient client = new TcpClient("127.0.0.1", 90000);
                 client.Connect();
@@ -95,11 +95,11 @@ namespace CodeArtEng.Tcp.Tests
                 Client1.ConnectionStatusChanged += Client_ConnectionStatusChanged;
                 Client1.Connect();
                 Thread.Sleep(200);
-                Assert.AreEqual(true, ClientConnectFlag);
+                Assert.That(ClientConnectFlag,Is.EqualTo(true));
 
                 server.Stop();
                 Thread.Sleep(200);
-                Assert.AreEqual(false, ClientConnectFlag);
+                Assert.That(ClientConnectFlag,Is.EqualTo(false));
             }
             finally
             {
@@ -116,7 +116,7 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void ClientWriteNotConnectedToServer()
         {
-            Assert.Throws<TcpClientException>(() =>
+                        Assert.Throws<TcpClientException>(() =>
             {
                 using (TcpClient client = new TcpClient("localhost", 11900))
                 {

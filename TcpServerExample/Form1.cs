@@ -211,6 +211,7 @@ namespace TcpServerExample
 
         private void btAppServerStart_Click(object sender, EventArgs e)
         {
+            AppServer.AutoSignInClient = ChkAutoSignIn.Checked;
             AppServer.Start(Convert.ToInt32(txtAppServerPort.Text));
             propertyGrid2.Refresh();
         }

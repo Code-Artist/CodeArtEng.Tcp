@@ -108,6 +108,13 @@ namespace CodeArtEng.Tcp
         public string WelcomeMessage { get; set; } = string.Empty;
 
         /// <summary>
+        /// Automatic sign-in new client without need to execute 'SignIn' command.
+        /// Advantage: Simplify implementation for TcpApp Client implementation from terminal.
+        /// Disadvantage: Client ID will be automatically assigned. Client which reconnect may get different ID.
+        /// </summary>
+        public bool AutoSignInClient { get; set; } = false;
+
+        /// <summary>
         /// Return version of CodeArtEng.Tcp Assembly
         /// </summary>
         public Version Version { get { return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version; } }
@@ -138,68 +145,7 @@ namespace CodeArtEng.Tcp
             //--- INIT (Commands used by TcpAppClient) ---
             RegisterSystemCommand("Help", "Show help screen. Include plugin type or object alias name to show commands for selected plugin.", ShowHelp,
                 TcpAppParameter.CreateOptionalParameter("Plugin", "Plugin type or Alias", "-"));
-            RegisterSystemCommand("SignIn", "Sign in to TcpAppServer. Server will verify connection id and return unique ID.", delegate (TcpAppInputCommand sender)
-                {
-                    //Assign Name
-                    string machineName = sender.Command.Parameter("ConnectionID").Value?.Replace(" ", "_");
-                    if (string.IsNullOrEmpty(machineName))
-                    {
-                        System.Net.IPAddress ClientIP = sender.AppClient.Connection.ClientIPAddress;
-                        try { machineName = System.Net.Dns.GetHostEntry(ClientIP).HostName; }
-                        catch { machineName = ClientIP.ToString(); }
-                    }
-
-                    if (sender.AppClient.SignedIn)
-                    {
-                        //Client already signed in, verify connection ID.
-                        if (sender.AppClient.Name.Equals(machineName, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            sender.OutputMessage = sender.AppClient.Name;
-                            sender.Status = TcpAppCommandStatus.OK;
-                            return;
-                        }
-                        else sender.AppClient.SignedIn = false;
-                    }
-
-                    TcpAppServerExEventArgs signInArg = new TcpAppServerExEventArgs(sender.AppClient) { Value = machineName };
-                    ClientSigningIn?.Invoke(this, signInArg);
-
-                    if (signInArg.Cancel == true)
-                    {
-                        sender.OutputMessage = signInArg.Reason;
-                        if (string.IsNullOrEmpty(sender.OutputMessage)) sender.OutputMessage = "Access Denied!";
-                        sender.Status = TcpAppCommandStatus.ERR;
-                        return;
-                    }
-
-                    string uniqueName = machineName;
-                    lock (AppClients)
-                    {
-                        //Cleanup instance with same name but already disconnected without signout
-                        if (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
-                        {
-                            for (int x = 0; x < AppClients.Count;)
-                            {
-                                if (!AppClients[x].Connection.Connected && AppClients[x].Name.StartsWith(uniqueName))
-                                {
-                                    AppClients[x].Dispose();
-                                    AppClients.RemoveAt(x);
-                                }
-                                else x++;
-                            }
-                        }
-                        while (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
-                        {
-                            uniqueName = machineName + "_" + (++Counter).ToString();
-                        }
-                        sender.AppClient.Name = uniqueName;
-                        sender.OutputMessage = uniqueName;
-                        sender.Status = TcpAppCommandStatus.OK;
-                        sender.AppClient.SignedIn = true;
-                        ClientSignedIn?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient)); //Event
-                    }
-
-                },
+            RegisterSystemCommand("SignIn", "Sign in to TcpAppServer. Server will verify connection id and return unique ID.", SignInClient,
                 TcpAppParameter.CreateOptionalParameter("ConnectionID", "Connection ID. If already exist, server will return an updated unique ID.", string.Empty));
             RegisterSystemCommand("SignOut", "Signout TcpAppClient.", delegate (TcpAppInputCommand sender)
                 {
@@ -460,10 +406,78 @@ namespace CodeArtEng.Tcp
                 TcpAppParameter.CreateParameter("Alias", "Plugin alias name."));
         }
 
+        private void SignInClient(TcpAppInputCommand sender)
+        {
+            //Assign Name
+            string machineName = sender.Command.Parameter("ConnectionID")?.Value?.Replace(" ", "_");
+            if (string.IsNullOrEmpty(machineName))
+            {
+                System.Net.IPAddress ClientIP = sender.AppClient.Connection.ClientIPAddress;
+                try { machineName = System.Net.Dns.GetHostEntry(ClientIP).HostName; }
+                catch { machineName = ClientIP.ToString(); }
+            }
+
+            if (sender.AppClient.SignedIn)
+            {
+                //Client already signed in, verify connection ID.
+                if (sender.AppClient.Name.Equals(machineName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    sender.OutputMessage = sender.AppClient.Name;
+                    sender.Status = TcpAppCommandStatus.OK;
+                    return ;
+                }
+                else sender.AppClient.SignedIn = false;
+            }
+
+            TcpAppServerExEventArgs signInArg = new TcpAppServerExEventArgs(sender.AppClient) { Value = machineName };
+            ClientSigningIn?.Invoke(this, signInArg);
+
+            if (signInArg.Cancel == true)
+            {
+                sender.OutputMessage = signInArg.Reason;
+                if (string.IsNullOrEmpty(sender.OutputMessage)) sender.OutputMessage = "Access Denied!";
+                sender.Status = TcpAppCommandStatus.ERR;
+                return ;
+            }
+
+            string uniqueName = machineName;
+            lock (AppClients)
+            {
+                //Cleanup instance with same name but already disconnected without signout
+                if (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
+                {
+                    for (int x = 0; x < AppClients.Count;)
+                    {
+                        if (!AppClients[x].Connection.Connected && AppClients[x].Name.StartsWith(uniqueName))
+                        {
+                            AppClients[x].Dispose();
+                            AppClients.RemoveAt(x);
+                        }
+                        else x++;
+                    }
+                }
+                while (AppClients.FirstOrDefault(x => x.Name == uniqueName) != null)
+                {
+                    uniqueName = machineName + "_" + (++Counter).ToString();
+                }
+                sender.AppClient.Name = uniqueName;
+                sender.OutputMessage = uniqueName;
+                sender.Status = TcpAppCommandStatus.OK;
+                sender.AppClient.SignedIn = true;
+                ClientSignedIn?.Invoke(this, new TcpAppServerEventArgs(sender.AppClient)); //Event
+            }
+        }
+
         private void VerifyUserSignedIn(TcpAppInputCommand command)
         {
             if (command.AppClient.SignedIn) return;
-            throw new InvalidOperationException("Client not signed in!");
+            if (AutoSignInClient)
+            {
+                SignInClient(command);
+                if (command.Status == TcpAppCommandStatus.OK) return;
+                throw new InvalidOperationException("Auto Signin Failed!");
+            }
+            throw new InvalidOperationException("Client not signed in! Execute SignIn first.");
         }
 
         private void TcpAppServer_ServerStopped(object sender, EventArgs e)
@@ -565,19 +579,19 @@ namespace CodeArtEng.Tcp
             }
             finally { ptrPlugin.DisposeRequest(); }
         }
-        
+
         /// <summary>
         /// Register all plugins from all loaded assemblies. Skip plugin if type already registered.
         /// </summary>
         /// <returns></returns>
-        public string [] RegisterPlugins()
+        public string[] RegisterPlugins()
         {
             List<string> results = new List<string>();
-            foreach(Assembly a in AppDomain.CurrentDomain.GetAssemblies() )
+            foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach(Type t in a.GetTypes())
+                foreach (Type t in a.GetTypes())
                 {
-                    if(t.GetInterfaces().Contains(typeof(ITcpAppServerPlugin)))
+                    if (t.GetInterfaces().Contains(typeof(ITcpAppServerPlugin)))
                     {
                         if (PluginTypes.FirstOrDefault(x => x.Type == t) != null)
                         {
@@ -592,7 +606,7 @@ namespace CodeArtEng.Tcp
                     }
                 }
             }
-            return results.ToArray();   
+            return results.ToArray();
         }
 
         /// <summary>
@@ -786,8 +800,7 @@ namespace CodeArtEng.Tcp
                 }
 
                 //Verify Client had signed in.
-                if (!inputCommand.AppClient.SignedIn && !inputCommand.Command.IsSystemCommand)
-                    throw new Exception("Client not signed in! Execute SignIn first.");
+                if (!inputCommand.Command.IsSystemCommand) VerifyUserSignedIn(inputCommand);
 
                 if (inputCommand.Command.UseMessageQueue && !inputCommand.Command.IsSystemCommand)
                 {

@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.Diagnostics;
@@ -64,13 +64,13 @@ namespace CodeArtEng.Tcp.Tests
         [Test]
         public void HostName()
         {
-            Assert.AreEqual("127.0.0.1", Client.HostName);
+            Assert.That(Client.HostName,Is.EqualTo("127.0.0.1"));
         }
 
         [Test]
         public void ConnectionPort()
         {
-            Assert.AreEqual(16000, Client.Port);
+            Assert.That(Client.Port,Is.EqualTo(16000));
         }
 
         [Test]
@@ -80,7 +80,7 @@ namespace CodeArtEng.Tcp.Tests
             Client.Write(message + "\t");
             TcpDelay();
             string returnString = Client.ReadString();
-            Assert.AreEqual(message, returnString);
+            Assert.That(returnString,Is.EqualTo(message));
         }
 
         [Test]
@@ -89,13 +89,13 @@ namespace CodeArtEng.Tcp.Tests
             string message = "Message from Client";
             Client.Write(message + "\t");
             TcpDelay();
-            Assert.AreEqual(message.Length, Client.ReadBytes().Count());
+            Assert.That(Client.ReadBytes().Count(),Is.EqualTo(message.Length));
         }
 
         [Test]
         public void ReadEmptyBuffer()
         {
-            Assert.AreEqual(0, Client.ReadBytes().Length);
+            Assert.That(Client.ReadBytes().Length,Is.EqualTo(0));
         }
 
         private bool DataReceiveEventRaised;
@@ -122,8 +122,8 @@ namespace CodeArtEng.Tcp.Tests
                 foreach (TcpServerConnection client in Server.Clients)
                     client.WriteToClient("Testing_ABCD");
                 Thread.Sleep(500);
-                Assert.AreEqual(true, DataReceiveEventRaised);
-                Assert.AreEqual("Testing_ABCD", DataReceived);
+                Assert.That(DataReceiveEventRaised,Is.EqualTo(true));
+                Assert.That(DataReceived,Is.EqualTo("Testing_ABCD"));
             }
             finally { Client.DataReceived -= Client_DataReceived; }
         }
@@ -136,14 +136,14 @@ namespace CodeArtEng.Tcp.Tests
                 Client.ConnectionStatusChanged += Client_ConnectionStatusChanged;
                 ConnectionStatusChangedEventRaised = false;
                 Client.Disconnect();
-                Assert.AreEqual(true, ConnectionStatusChangedEventRaised);
+                Assert.That(ConnectionStatusChangedEventRaised,Is.EqualTo(true));
 
                 Client.Connect();
-                Assert.AreEqual(true, ConnectionStatusChangedEventRaised);
+                Assert.That(ConnectionStatusChangedEventRaised,Is.EqualTo(true));
             }
             catch
             {
-                Assert.Fail();
+                                Assert.Fail();
             }
             finally
             {
@@ -173,7 +173,7 @@ namespace CodeArtEng.Tcp.Tests
                 string contents = File.ReadAllText(file);
                 Client.Write(contents + "\t");
                 Thread.Sleep(200);
-                Assert.AreEqual(contents.Length, DataReceived?.Length);
+                Assert.That(DataReceived?.Length,Is.EqualTo(contents.Length));
             }
             finally { Client.DataReceived -= Client_DataReceived; }
 
@@ -195,12 +195,12 @@ namespace CodeArtEng.Tcp.Tests
                 for(int x=0; x < message.Length; x++)
                 {
                     Client.Write(message.Substring(x, 1));
-                    Assert.IsFalse(DataReceiveEventRaised);
+                    Assert.That(DataReceiveEventRaised,Is.False);
                     Thread.Sleep(10);
                 }
                 Thread.Sleep(200);
-                Assert.IsTrue(DataReceiveEventRaised);
-                Assert.AreEqual(message, DataReceived);
+                Assert.That(DataReceiveEventRaised,Is.True);
+                Assert.That(DataReceived,Is.EqualTo(message));
 
             }
             finally
