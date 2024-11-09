@@ -310,7 +310,6 @@ private void ExecuteCommand()
 <b>TCPAppClientTerminal</b> is an example of TCP client implementation.<br>
 This application implemented generic terminal where user can enter the commands manually to interact with server application.
 
-ToDo: TcpAppClientTerminal Screenshot.
 ![TcpAppClientTerminal](<Doc/TCPAppTerminal.png>)
 
 Code Artist 2017 - 2022  
