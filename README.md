@@ -160,6 +160,16 @@ TCP Application Protocol is a text based protocol, where any TCP client includin
 - TcpAppInputCommand - TCP Application Server Received Command.
 - TcpAppClient - TCP Application Client. Remove control client.
 
+### Implement TCP Application Client from Terminal
+`TcpAppClient` is not the only way to communicate with `TcpAppServer` based application, it can be done with any ordinary TCP Client with few additional steps.
+
+1. Connect to Server using any TCP Client terminal such as **RealTerm** and etc.
+2. TCP Client: Sent `SignIn [ConnectionID]` to Server. `ConnectionID` is optional, can be either computer name or any unique name represent current instance. If duplicated ID exists, an unique ID will be returned.
+3. Execute other commands using format as described above.
+
+**Auto SignIn - Configure from TcpAppServer**
+If `ConnectionID` from client is not cruicial for your application, you may consider to set `AutoSignInClient` in `TcpAppServer` class to `true` where incoming client connection will be automatically signed in on first non-system command.
+
 ## TCP Application Server
 ### Quick start
 ```C#
@@ -306,11 +316,13 @@ private void ExecuteCommand()
     //Process returned result...
 }
 ```
+
+
 ### TCP Application Client Terminal
 <b>TCPAppClientTerminal</b> is an example of TCP client implementation.<br>
 This application implemented generic terminal where user can enter the commands manually to interact with server application.
 
 ![TcpAppClientTerminal](<Doc/TCPAppTerminal.png>)
 
-Code Artist 2017 - 2022  
+Code Artist 2017 - 2022
 www.codearteng.com
