@@ -1,7 +1,6 @@
 ﻿using CodeArtEng.Tcp;
 using System;
 using System.Text;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace TcpServerExample

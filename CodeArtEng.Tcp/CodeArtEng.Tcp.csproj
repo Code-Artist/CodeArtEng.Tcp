@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>5.3.0</Version>
+    <Version>5.3.1</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/Code-Artist/CodeArtEng.Tcp</PackageProjectUrl>
     <AssemblyVersion></AssemblyVersion>

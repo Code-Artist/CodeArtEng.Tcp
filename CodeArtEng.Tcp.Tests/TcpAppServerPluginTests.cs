@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using NUnit.Framework;
-using CodeArtEng.Tcp;
 using System.Diagnostics;
 
 namespace CodeArtEng.Tcp.Tests
@@ -87,6 +83,9 @@ namespace CodeArtEng.Tcp.Tests
             TcpAppCommandResult result = Client.ExecuteCommand("CreatePlugin simplestring S1");
             Assert.That(result.Status, Is.EqualTo(TcpAppCommandStatus.OK));
             result = Client.ExecuteCommand("Execute S1 Replace \"Hell Of World\"  \"l Of \"  \"lo \"");
+            Assert.That(result.ReturnMessage, Is.EqualTo("Hello World"));
+
+            result = Client.ExecuteCommand("Execute S1 Replace", arguments: new string[] { "Hell of World", "l of ", "lo " });
             Assert.That(result.ReturnMessage, Is.EqualTo("Hello World"));
         }
 

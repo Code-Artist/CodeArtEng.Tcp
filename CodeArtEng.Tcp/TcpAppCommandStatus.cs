@@ -1,7 +1,4 @@
-﻿using System.Text;
-using System.Threading.Tasks;
-
-namespace CodeArtEng.Tcp
+﻿namespace CodeArtEng.Tcp
 {
 
 

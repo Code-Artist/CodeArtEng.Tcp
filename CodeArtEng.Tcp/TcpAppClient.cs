@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Diagnostics;
 
@@ -139,13 +138,20 @@ namespace CodeArtEng.Tcp
         /// <summary>
         /// Execute TCP Application Client Command.
         /// </summary>
-        /// <param name="command"></param>
+        /// <param name="command">Command keyword and arguments in space delimited format, add double quote for argument with spaces.</param>
         /// <param name="timeout">Command timeout in ms</param>
+        /// <param name="arguments">Command arguments, optional.</param>
         /// <returns></returns>
-        public TcpAppCommandResult ExecuteCommand(string command, int timeout = 1000)
+        public TcpAppCommandResult ExecuteCommand(string command, int timeout = 1000, string[] arguments = null)
         {
             if (!Initialized) throw new TcpAppClientException("TcpApp not initialized, execute Connect() first!");
             if (!Connected) Connect();
+
+            // Compile arguments into space delimited string, add double quote when argument contains space
+            if (arguments != null && arguments.Length > 0)
+            {
+                command += " " + string.Join(" ", arguments.Select(arg => arg.Contains(' ') ? $"\"{arg}\"" : arg));
+            }
             return ExecuteTcpAppCommand(command, timeout);
         }
 

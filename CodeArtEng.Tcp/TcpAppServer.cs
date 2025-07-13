@@ -233,6 +233,7 @@ namespace CodeArtEng.Tcp
                             {
                                 case TcpAppCommandStatus.BUSY:
                                 case TcpAppCommandStatus.QUEUED:
+                                    //Return queue length only when status is busy or queued.
                                     sender.OutputMessage = "Queue Length = " + CommandQueue.Count();
                                     break;
 
@@ -257,9 +258,6 @@ namespace CodeArtEng.Tcp
                                             ResultQueue.Remove(cmd);
                                             sender.OutputMessage += cmd.OutputMessage + "\n";
                                         }
-
-                                        //Return number of remaining queued commands
-                                        sender.OutputMessage += CommandQueue.Where(x => x.AppClient == sender.AppClient).Count().ToString();
                                         sender.AppClient.NextQueuedCommand = nextQueue;
                                     }
                                     break;

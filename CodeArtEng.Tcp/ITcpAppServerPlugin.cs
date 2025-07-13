@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CodeArtEng.Tcp
+﻿namespace CodeArtEng.Tcp
 {
     /// <summary>
     /// TCP Application Plugin Interface for Plugin Implementation
